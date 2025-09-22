@@ -45,7 +45,8 @@
                 <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-900"></div>
             </div>
             <div id="main-content" class="hidden">
-                <h2 id="wiki-title" class="text-4xl font-bold text-gray-800 mb-4 break-words"></h2>
+                <h2 id="wiki-title" class="text-4xl font-bold text-gray-800 mb-2 break-words"></h2>
+                <div id="wiki-dates" class="text-gray-500 text-sm mb-4"></div>
                 <div id="wiki-content" class="prose max-w-none text-gray-600"></div>
                 <div id="wiki-actions" class="mt-6 flex flex-wrap gap-2 hidden">
                     <!-- Action buttons will go here -->
@@ -138,6 +139,7 @@
         const saveWikiBtn = document.getElementById('save-wiki-btn');
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
+        const wikiDates = document.getElementById('wiki-dates');
 
         // Utility function to show a custom modal message
         function showMessage(title, message, confirmCallback = null) {
@@ -205,6 +207,7 @@
             mainContent.classList.add('hidden');
             editorSection.classList.add('hidden');
             wikiActions.classList.add('hidden');
+            wikiDates.textContent = '';
             
             wikiTitle.textContent = `Search Results for "${queryText}"`;
             let resultsHtml = '';
@@ -258,13 +261,12 @@
             mainContent.classList.add('hidden');
             editorSection.classList.add('hidden');
             wikiActions.classList.add('hidden');
+            wikiDates.textContent = '';
 
-            const path = window.location.pathname.substring(1); // Remove leading slash
-            const parts = path.split('/');
-            const route = parts[0];
-            const wikiName = parts[1] || 'Home';
+            const path = window.location.pathname;
+            const parts = path.split('/').filter(Boolean); // Filter out empty strings
+            const route = parts[0] || '';
             
-            // Check for the special 'createwiki' route
             if (route === 'createwiki') {
                 if (!auth.currentUser) {
                     wikiTitle.textContent = 'Authentication Required';
@@ -273,13 +275,20 @@
                     mainContent.classList.remove('hidden');
                     return;
                 }
+                wikiTitle.textContent = 'Create New Wiki Page';
                 editorTitleInput.value = '';
                 editorContentInput.value = '';
                 editorSection.classList.remove('hidden');
                 mainContent.classList.add('hidden');
                 loadingSpinner.classList.add('hidden');
                 return;
+            } else if (route === 'search' && parts[1]) {
+                const queryText = decodeURIComponent(parts[1]).replace(/\+/g, ' ');
+                searchWikis(queryText);
+                return;
             }
+
+            const wikiName = (route === 'wiki' && parts[1]) ? parts[1] : 'Home';
 
             try {
                 let wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
@@ -302,6 +311,10 @@
                     const data = wikiDoc.data();
                     wikiTitle.textContent = data.title;
                     wikiContent.innerHTML = marked.parse(data.content);
+                    
+                    const createdAt = new Date(data.createdAt).toLocaleString();
+                    const lastModified = new Date(data.lastModified).toLocaleString();
+                    wikiDates.innerHTML = `Created On: **${createdAt}** | Last Edited On: **${lastModified}**`;
                     
                     // Show action buttons if a user is signed in
                     if (auth.currentUser) {
@@ -354,11 +367,8 @@
                         createBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
                         createBtn.textContent = 'Create Wiki Here!';
                         createBtn.onclick = () => {
-                            window.history.pushState({}, '', '/createwiki');
-                            editorTitleInput.value = decodeURIComponent(wikiName).replace(/-/g, ' ');
-                            editorContentInput.value = '';
-                            editorSection.classList.remove('hidden');
-                            mainContent.classList.add('hidden');
+                            window.history.pushState({}, '', `/createwiki`);
+                            loadWikiPage(auth, db);
                         };
                         wikiContent.appendChild(createBtn);
                     }
@@ -455,7 +465,8 @@
         searchBtn.addEventListener('click', () => {
             const queryText = searchInput.value.trim();
             if (queryText) {
-                searchWikis(queryText);
+                window.history.pushState({}, '', `/search/${encodeURIComponent(queryText)}`);
+                loadWikiPage(auth, db);
             }
         });
 
