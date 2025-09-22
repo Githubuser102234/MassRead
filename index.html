@@ -68,7 +68,7 @@
                     <textarea id="editor-content" name="content" rows="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button type="submit" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Save Wiki</button>
+                    <button type="submit" id="save-wiki-btn" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Save Wiki</button>
                     <button type="button" id="cancel-edit" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
                 </div>
             </form>
@@ -101,10 +101,14 @@
         // --- Additional Firebase Imports for Auth and Firestore ---
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        
+        // --- Firebase AI SDK for content moderation ---
+        import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-ai.js";
 
         // Global variables for Firebase services
         let auth;
         let db;
+        let model;
 
         // A flag to ensure initial page load logic runs only once
         let hasInitialized = false;
@@ -122,6 +126,7 @@
         const wikiContent = document.getElementById('wiki-content');
         const wikiActions = document.getElementById('wiki-actions');
         const markdownToolbar = document.getElementById('markdown-toolbar');
+        const saveWikiBtn = document.getElementById('save-wiki-btn');
 
         // Utility function to show a custom modal message
         function showMessage(title, message, confirmCallback = null) {
@@ -301,11 +306,29 @@
                 showMessage('Missing Title', 'Please enter a title for the wiki page.');
                 return;
             }
-
-            // Create a simple slug from the title for the document ID
-            const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
+            
+            // Show loading state
+            saveWikiBtn.textContent = 'Saving...';
+            saveWikiBtn.disabled = true;
+            
             try {
+                // --- Step 1: Moderate the content using the Gemini API ---
+                const moderationPrompt = `Is the following text suitable for all ages? Answer only with 'Yes' or 'No'.
+                Text: "${pageContent}"`;
+
+                const result = await model.generateContent(moderationPrompt);
+                const responseText = result.response.text().trim();
+                
+                if (responseText.toLowerCase() === 'no') {
+                    showMessage('Content Flagged', 'This content was flagged as inappropriate and cannot be saved. Please revise it.');
+                    saveWikiBtn.textContent = 'Save Wiki';
+                    saveWikiBtn.disabled = false;
+                    return;
+                }
+
+                // Create a simple slug from the title for the document ID
+                const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
                 await setDoc(doc(db, 'wikis', docId), {
                     title: pageTitle,
                     content: pageContent,
@@ -320,9 +343,11 @@
                 loadWikiPage(auth, db);
             } catch (e) {
                 console.error("Error saving wiki:", e);
-                showMessage('Error', 'Failed to save the wiki page. Please try again.');
+                showMessage('Error', `Failed to save the wiki page: ${e.message}. Please try again.`);
             } finally {
                 editorSection.classList.add('hidden');
+                saveWikiBtn.textContent = 'Save Wiki';
+                saveWikiBtn.disabled = false;
             }
         });
         
@@ -366,6 +391,12 @@
             auth = getAuth(app);
             db = getFirestore(app);
             const provider = new GoogleAuthProvider();
+
+            // Initialize the Gemini Developer API backend service
+            const ai = getAI(app, { backend: new GoogleAIBackend() });
+            
+            // Create a GenerativeModel instance for moderation
+            model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
 
             // The main initialization logic wrapped in a listener
             onAuthStateChanged(auth, (user) => {
