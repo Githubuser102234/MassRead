@@ -12,6 +12,13 @@
             background-color: #f3f4f6;
             color: #1f2937;
         }
+        .prose {
+            max-width: 65ch;
+        }
+        .prose h1, .prose h2, .prose h3 {
+            color: #1f2937;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -73,14 +80,15 @@
 
     <!-- Firebase SDK and Application Logic -->
     <script type="module">
-        // --- Core Firebase SDK provided by the user ---
+        // --- ALL Firebase SDK imports using the same version and path prefix for consistency ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        
+        // Markdown library from CDN
+        import 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js';
 
         // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
             apiKey: "AIzaSyAhmPgZumTY82E7r2KWTzINHld5dqUVSBY",
             authDomain: "massread-8c2db.firebaseapp.com",
@@ -90,15 +98,9 @@
             appId: "1:225022727183:web:7d459a83eef33c81a7ff7a",
             measurementId: "G-NDN4EHZRZZ"
         };
-        // Initialize Firebase
+        
+        // Initialize Firebase services
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-
-        // --- Additional Firebase Imports for Auth and Firestore ---
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-
-        // --- Core Application Logic ---
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
@@ -114,11 +116,6 @@
         const wikiTitle = document.getElementById('wiki-title');
         const wikiContent = document.getElementById('wiki-content');
 
-        // Markdown library from CDN
-        const markdownScript = document.createElement('script');
-        markdownScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js';
-        document.head.appendChild(markdownScript);
-
         // Utility function to show a custom modal message
         function showMessage(title, message) {
             document.getElementById('modal-title').textContent = title;
@@ -131,7 +128,47 @@
             document.getElementById('message-modal').classList.add('hidden');
         });
 
+        // --- Wiki Page Loading Logic ---
+        async function loadWikiPage() {
+            loadingSpinner.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            editorSection.classList.add('hidden');
+
+            const path = window.location.pathname.substring(1); // Remove leading slash
+            const parts = path.split('/');
+            const wikiName = parts[1] || 'Home'; // Default to 'Home' page
+
+            try {
+                console.log(`Attempting to load wiki: ${wikiName}`);
+                const wikiDocRef = doc(db, 'wikis', wikiName);
+                const wikiDoc = await getDoc(wikiDocRef);
+
+                if (wikiDoc.exists()) {
+                    const data = wikiDoc.data();
+                    wikiTitle.textContent = data.title;
+                    // Ensure marked is available before use
+                    if (window.marked) {
+                        wikiContent.innerHTML = window.marked.parse(data.content);
+                    } else {
+                        wikiContent.innerHTML = data.content;
+                    }
+                } else {
+                    wikiTitle.textContent = 'Page Not Found';
+                    wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
+                        ${auth.currentUser ? 'You can create it!' : 'Sign in to create it.'}</p>`;
+                }
+            } catch (e) {
+                console.error("Error loading wiki:", e);
+                wikiTitle.textContent = 'Error';
+                wikiContent.innerHTML = '<p class="text-red-500">Failed to load the page. Please check your internet connection.</p>';
+            } finally {
+                loadingSpinner.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+            }
+        }
+
         // --- Auth State Listener ---
+        let hasInitialized = false;
         onAuthStateChanged(auth, (user) => {
             authUi.innerHTML = ''; // Clear existing UI
             if (user) {
@@ -184,40 +221,11 @@
                 };
                 authUi.appendChild(signInBtn);
             }
-            loadWikiPage();
-        });
-
-        // --- Wiki Page Loading Logic ---
-        async function loadWikiPage() {
-            loadingSpinner.classList.remove('hidden');
-            mainContent.classList.add('hidden');
-            editorSection.classList.add('hidden');
-
-            const path = window.location.pathname.substring(1); // Remove leading slash
-            const parts = path.split('/');
-            const wikiName = parts[1] || 'Home'; // Default to 'Home' page
-
-            try {
-                const wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
-                if (wikiDoc.exists()) {
-                    const data = wikiDoc.data();
-                    wikiTitle.textContent = data.title;
-                    // Use marked.js to convert markdown to HTML
-                    wikiContent.innerHTML = marked.parse(data.content);
-                } else {
-                    wikiTitle.textContent = 'Page Not Found';
-                    wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
-                        ${auth.currentUser ? 'You can create it!' : 'Sign in to create it.'}</p>`;
-                }
-            } catch (e) {
-                console.error("Error loading wiki:", e);
-                wikiTitle.textContent = 'Error';
-                wikiContent.innerHTML = '<p class="text-red-500">Failed to load the page. Please check your internet connection.</p>';
-            } finally {
-                loadingSpinner.classList.add('hidden');
-                mainContent.classList.remove('hidden');
+            if (!hasInitialized) {
+                loadWikiPage();
+                hasInitialized = true;
             }
-        }
+        });
 
         // --- Wiki Form Submission and Save Logic ---
         wikiForm.addEventListener('submit', async (e) => {
@@ -271,3 +279,4 @@
     </script>
 </body>
 </html>
+
