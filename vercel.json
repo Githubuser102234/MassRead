@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    {
+      "source": "/wiki/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}
+
