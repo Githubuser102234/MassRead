@@ -131,7 +131,8 @@
             });
 
             // --- Wiki Page Loading Logic ---
-            async function loadWikiPage() {
+            // Pass auth and db explicitly to ensure they are available
+            async function loadWikiPage(auth, db) {
                 loadingSpinner.classList.remove('hidden');
                 mainContent.classList.add('hidden');
                 editorSection.classList.add('hidden');
@@ -163,6 +164,7 @@
             }
 
             // --- Auth State Listener ---
+            // This now calls the loading function with the auth and db objects
             onAuthStateChanged(auth, (user) => {
                 authUi.innerHTML = ''; // Clear existing UI
                 if (user) {
@@ -215,7 +217,7 @@
                     };
                     authUi.appendChild(signInBtn);
                 }
-                loadWikiPage();
+                loadWikiPage(auth, db);
             });
 
             // --- Wiki Form Submission and Save Logic ---
@@ -250,7 +252,7 @@
                     showMessage('Success!', `"${pageTitle}" has been saved.`);
                     // Redirect to the new page path
                     window.history.pushState({}, '', `/wiki/${docId}`);
-                    loadWikiPage();
+                    loadWikiPage(auth, db);
                 } catch (e) {
                     console.error("Error saving wiki:", e);
                     showMessage('Error', 'Failed to save the wiki page. Please try again.');
@@ -266,7 +268,7 @@
             });
 
             // Listen for history changes (back/forward buttons) to reload content
-            window.addEventListener('popstate', loadWikiPage);
+            window.addEventListener('popstate', () => loadWikiPage(auth, db));
         }
     </script>
 </body>
