@@ -12,6 +12,20 @@
             background-color: #f3f4f6;
             color: #1f2937;
         }
+        /* Custom styles for the markdown preview */
+        .markdown-preview {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background-color: #f9fafb;
+            padding: 1rem;
+        }
+        .prose img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+        }
     </style>
 
     <!-- Correctly load marked.js from a working CDN -->
@@ -55,12 +69,13 @@
         </div>
         
         <!-- Wiki Editor/Creator Form -->
-        <div id="editor-section" class="hidden max-w-4xl mx-auto mt-6 bg-white rounded-xl shadow-lg p-6 md:p-8">
+        <div id="editor-section" class="hidden max-w-full mx-auto mt-6 bg-white rounded-xl shadow-lg p-6 md:p-8">
             <h3 class="text-2xl font-bold text-gray-800 mb-4">Edit Wiki Page</h3>
             <form id="wiki-form" class="space-y-4">
                 <div>
                     <label for="editor-title" class="block text-sm font-medium text-gray-700">Page Title</label>
                     <input type="text" id="editor-title" name="title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100" required>
+                    <input type="hidden" id="original-wiki-id" value="">
                 </div>
                 <div>
                     <label for="editor-content" class="block text-sm font-medium text-gray-700">Content (Markdown supported)</label>
@@ -75,7 +90,11 @@
                         <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="![]()">Image</button>
                     </div>
 
-                    <textarea id="editor-content" name="content" rows="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
+                    <div class="flex flex-col md:flex-row md:space-x-4">
+                        <textarea id="editor-content" name="content" rows="15" class="mt-1 flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
+                        <div id="markdown-preview" class="markdown-preview mt-4 md:mt-1 flex-1"></div>
+                    </div>
+
                 </div>
                 <div class="flex items-center space-x-4">
                     <button type="submit" id="save-wiki-btn" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Save Wiki</button>
@@ -110,7 +129,7 @@
         
         // --- Additional Firebase Imports for Auth and Firestore ---
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
         
         // --- Firebase AI SDK for content moderation ---
         import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-ai.js";
@@ -131,6 +150,7 @@
         const wikiForm = document.getElementById('wiki-form');
         const editorTitleInput = document.getElementById('editor-title');
         const editorContentInput = document.getElementById('editor-content');
+        const originalWikiIdInput = document.getElementById('original-wiki-id');
         const cancelEditButton = document.getElementById('cancel-edit');
         const wikiTitle = document.getElementById('wiki-title');
         const wikiContent = document.getElementById('wiki-content');
@@ -140,6 +160,7 @@
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
         const wikiDates = document.getElementById('wiki-dates');
+        const markdownPreview = document.getElementById('markdown-preview');
 
         // Utility function to show a custom modal message
         function showMessage(title, message, confirmCallback = null) {
@@ -199,6 +220,11 @@
                 textarea.selectionStart = textarea.selectionEnd = start + text.length;
             }
             textarea.focus();
+            updateMarkdownPreview();
+        }
+
+        function updateMarkdownPreview() {
+            markdownPreview.innerHTML = marked.parse(editorContentInput.value);
         }
 
         // --- Search Logic ---
@@ -262,6 +288,7 @@
             editorSection.classList.add('hidden');
             wikiActions.classList.add('hidden');
             wikiDates.textContent = '';
+            originalWikiIdInput.value = '';
 
             const path = window.location.pathname;
             const parts = path.split('/').filter(Boolean); // Filter out empty strings
@@ -278,6 +305,7 @@
                 wikiTitle.textContent = 'Create New Wiki Page';
                 editorTitleInput.value = '';
                 editorContentInput.value = '';
+                updateMarkdownPreview();
                 editorSection.classList.remove('hidden');
                 mainContent.classList.add('hidden');
                 loadingSpinner.classList.add('hidden');
@@ -324,8 +352,11 @@
                         editBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
                         editBtn.textContent = 'Edit Wiki';
                         editBtn.onclick = () => {
+                            window.history.pushState({}, '', '/createwiki');
                             editorTitleInput.value = data.title;
                             editorContentInput.value = data.content;
+                            originalWikiIdInput.value = wikiDoc.id; // Store the original ID for updates
+                            updateMarkdownPreview();
                             editorSection.classList.remove('hidden');
                             mainContent.classList.add('hidden');
                         };
@@ -368,6 +399,7 @@
                         createBtn.textContent = 'Create Wiki Here!';
                         createBtn.onclick = () => {
                             window.history.pushState({}, '', `/createwiki`);
+                            editorTitleInput.value = decodeURIComponent(wikiName).replace(/-/g, ' ');
                             loadWikiPage(auth, db);
                         };
                         wikiContent.appendChild(createBtn);
@@ -394,6 +426,7 @@
 
             const pageTitle = editorTitleInput.value.trim();
             const pageContent = editorContentInput.value.trim();
+            const originalId = originalWikiIdInput.value;
 
             if (!pageTitle) {
                 showMessage('Missing Title', 'Please enter a title for the wiki page.');
@@ -419,20 +452,30 @@
                     return;
                 }
 
-                // Create a simple slug from the title for the document ID
-                const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
-                await setDoc(doc(db, 'wikis', docId), {
-                    title: pageTitle,
-                    content: pageContent,
-                    authorId: user.uid,
-                    authorName: user.displayName,
-                    createdAt: new Date().toISOString(),
-                    lastModified: new Date().toISOString()
-                });
-                showMessage('Success!', `"${pageTitle}" has been saved.`);
-                // Redirect to the new page path
-                window.history.pushState({}, '', `/wiki/${docId}`);
+                if (originalId) {
+                    // Update existing wiki
+                    await updateDoc(doc(db, 'wikis', originalId), {
+                        title: pageTitle,
+                        content: pageContent,
+                        lastModified: new Date().toISOString()
+                    });
+                    showMessage('Success!', `"${pageTitle}" has been updated.`);
+                    window.history.pushState({}, '', `/wiki/${originalId}`);
+                } else {
+                    // Create new wiki
+                    const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                    await setDoc(doc(db, 'wikis', docId), {
+                        title: pageTitle,
+                        content: pageContent,
+                        authorId: user.uid,
+                        authorName: user.displayName,
+                        createdAt: new Date().toISOString(),
+                        lastModified: new Date().toISOString()
+                    });
+                    showMessage('Success!', `"${pageTitle}" has been saved.`);
+                    window.history.pushState({}, '', `/wiki/${docId}`);
+                }
+                
                 loadWikiPage(auth, db);
             } catch (e) {
                 console.error("Error saving wiki:", e);
@@ -475,6 +518,10 @@
                 searchBtn.click();
             }
         });
+
+        // Add keyup listener for live markdown preview
+        editorContentInput.addEventListener('keyup', updateMarkdownPreview);
+        
 
         // Listen for history changes (back/forward buttons) to reload content
         window.addEventListener('popstate', () => loadWikiPage(auth, db));
