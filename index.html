@@ -123,6 +123,12 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </button>
+                    <!-- Link Icon -->
+                    <button id="copy-link-btn" class="text-gray-500 hover:text-gray-700 transition-colors focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.881a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zm-1.102-1.102a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zm-1.102-1.102a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zM17.657 4.343a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zm1.102-1.102a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zM17.657 4.343a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zM13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zm-4.475-1.102a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101z" />
+                        </svg>
+                    </button>
                     <!-- Info Mini Menu -->
                     <div id="info-menu" class="hidden absolute top-full left-0 mt-2 z-10 w-64 bg-white rounded-lg shadow-xl p-4 space-y-2">
                         <div id="info-dates" class="text-gray-500 text-sm"></div>
@@ -132,6 +138,10 @@
                 
                 <div id="deprecated-message" class="hidden mt-4 deprecated-box">
                     <p class="font-bold">This wiki has been deprecated because it had content in it that violated our guidelines, to restore this wiki please edit it.</p>
+                </div>
+
+                <div id="title-deprecated-message" class="hidden mt-4 deprecated-box">
+                    <p class="font-bold">The topic of this wiki violated our guidelines, therefore it is no longer available.</p>
                 </div>
                 
                 <div id="wiki-content" class="wiki-prose max-w-none text-gray-600 mt-4"></div>
@@ -193,9 +203,20 @@
         <div id="report-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-75 p-4">
             <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
                 <h3 class="text-xl font-bold text-gray-800 mb-2">Report Wiki Page</h3>
-                <p class="text-gray-600 mb-4">Please provide more information about why this wiki violates our guidelines. Your feedback will be used to re-evaluate the content.</p>
+                <p class="text-gray-600 mb-4">Please provide more information about why this wiki violates our guidelines.</p>
                 <form id="report-form" class="space-y-4">
-                    <textarea id="report-reason" rows="6" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100" placeholder="e.g., This content is misleading and contains hate speech." required></textarea>
+                    <div>
+                        <label for="report-type" class="block text-sm font-medium text-gray-700">What are you reporting?</label>
+                        <select id="report-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100">
+                            <option value="content">Content</option>
+                            <option value="title">Title</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="report-reason" class="block text-sm font-medium text-gray-700">More details:</label>
+                        <textarea id="report-reason" rows="6" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100" placeholder="e.g., This content is misleading and contains hate speech." required></textarea>
+                    </div>
+                    
                     <div class="flex justify-end space-x-4">
                         <button type="button" id="report-cancel-btn" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
                         <button type="submit" id="report-submit-btn" class="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">Submit Report</button>
@@ -254,10 +275,13 @@
         const reportBtn = document.getElementById('report-btn');
         const reportModal = document.getElementById('report-modal');
         const reportForm = document.getElementById('report-form');
+        const reportType = document.getElementById('report-type');
         const reportReason = document.getElementById('report-reason');
         const reportCancelBtn = document.getElementById('report-cancel-btn');
         const deprecatedMessage = document.getElementById('deprecated-message');
+        const titleDeprecatedMessage = document.getElementById('title-deprecated-message');
         const markdownPreview = document.getElementById('markdown-preview');
+        const copyLinkBtn = document.getElementById('copy-link-btn');
 
         // Utility function to show a custom modal message
         function showMessage(title, message, confirmCallback = null) {
@@ -330,6 +354,9 @@
             mainContent.classList.add('hidden');
             editorSection.classList.add('hidden');
             wikiActions.classList.add('hidden');
+            infoMenu.classList.add('hidden');
+            infoBtn.classList.add('hidden');
+            copyLinkBtn.classList.add('hidden');
             
             wikiTitle.textContent = `Search Results for "${queryText}"`;
             let resultsHtml = '';
@@ -385,12 +412,20 @@
             wikiActions.classList.add('hidden');
             infoMenu.classList.add('hidden');
             deprecatedMessage.classList.add('hidden');
+            titleDeprecatedMessage.classList.add('hidden');
             originalWikiIdInput.value = '';
+            
+            // Hide info and link buttons by default
+            infoBtn.classList.add('hidden');
+            copyLinkBtn.classList.add('hidden');
 
             const path = window.location.pathname;
             const parts = path.split('/').filter(Boolean); // Filter out empty strings
             const route = parts[0] || '';
-            
+            const wikiName = (route === 'wiki' && parts[1]) ? parts[1] : 
+                             (route === 'editwiki' && parts[1]) ? parts[1] : 
+                             'Home';
+
             if (route === 'createwiki') {
                 if (!auth.currentUser) {
                     wikiTitle.textContent = 'Authentication Required';
@@ -407,13 +442,44 @@
                 mainContent.classList.add('hidden');
                 loadingSpinner.classList.add('hidden');
                 return;
+            } else if (route === 'editwiki' && wikiName !== 'Home') {
+                 if (!auth.currentUser) {
+                    wikiTitle.textContent = 'Authentication Required';
+                    wikiContent.innerHTML = '<p class="text-gray-500">You must be signed in to edit a wiki page.</p>';
+                    loadingSpinner.classList.add('hidden');
+                    mainContent.classList.remove('hidden');
+                    return;
+                }
+                const wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
+                if (wikiDoc.exists()) {
+                    const data = wikiDoc.data();
+                    if (data.isTitleDeprecated) {
+                         wikiTitle.textContent = data.title;
+                         titleDeprecatedMessage.classList.remove('hidden');
+                         wikiContent.innerHTML = '';
+                         loadingSpinner.classList.add('hidden');
+                         mainContent.classList.remove('hidden');
+                         return;
+                    }
+                    wikiTitle.textContent = `Editing: ${data.title}`;
+                    editorTitleInput.value = data.title;
+                    editorContentInput.value = data.content;
+                    originalWikiIdInput.value = wikiDoc.id;
+                    updateMarkdownPreview();
+                    editorSection.classList.remove('hidden');
+                    mainContent.classList.add('hidden');
+                    loadingSpinner.classList.add('hidden');
+                } else {
+                    // Wiki not found, route to a 'create' page
+                    window.history.replaceState({}, '', `/createwiki`);
+                    loadWikiPage(auth, db);
+                }
+                return;
             } else if (route === 'search' && parts[1]) {
                 const queryText = decodeURIComponent(parts[1]).replace(/\+/g, ' ');
                 searchWikis(queryText);
                 return;
             }
-
-            const wikiName = (route === 'wiki' && parts[1]) ? parts[1] : 'Home';
 
             try {
                 let wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
@@ -427,7 +493,9 @@
                         authorId: 'system',
                         authorName: 'System',
                         createdAt: new Date().toISOString(),
-                        lastModified: new Date().toISOString()
+                        lastModified: new Date().toISOString(),
+                        isDeprecated: false,
+                        isTitleDeprecated: false
                     });
                     wikiDoc = await getDoc(doc(db, 'wikis', 'Home')); // Fetch the new doc
                 }
@@ -435,13 +503,21 @@
                 if (wikiDoc.exists()) {
                     const data = wikiDoc.data();
                     wikiTitle.textContent = data.title;
+                    
+                    // Show info and link buttons
+                    infoBtn.classList.remove('hidden');
+                    copyLinkBtn.classList.remove('hidden');
 
                     // Display dates in the info menu
                     const createdAt = new Date(data.createdAt).toLocaleString();
                     const lastModified = new Date(data.lastModified).toLocaleString();
                     infoDates.innerHTML = `<p class="mb-2">Created On: <span class="font-bold">${createdAt}</span></p><p>Last Edited On: <span class="font-bold">${lastModified}</span></p>`;
 
-                    if (data.isDeprecated) {
+                    if (data.isTitleDeprecated) {
+                        wikiContent.innerHTML = '';
+                        titleDeprecatedMessage.classList.remove('hidden');
+                        wikiActions.classList.add('hidden'); // Hide all actions
+                    } else if (data.isDeprecated) {
                         wikiContent.innerHTML = '';
                         deprecatedMessage.classList.remove('hidden');
                         
@@ -452,13 +528,8 @@
                             editBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
                             editBtn.textContent = 'Edit Wiki to Restore';
                             editBtn.onclick = () => {
-                                window.history.pushState({}, '', '/createwiki');
-                                editorTitleInput.value = data.title;
-                                editorContentInput.value = ''; // Start with a blank canvas
-                                originalWikiIdInput.value = wikiDoc.id;
-                                updateMarkdownPreview();
-                                editorSection.classList.remove('hidden');
-                                mainContent.classList.add('hidden');
+                                window.history.pushState({}, '', `/editwiki/${wikiDoc.id}`);
+                                loadWikiPage(auth, db);
                             };
                             wikiActions.appendChild(editBtn);
                             wikiActions.classList.remove('hidden');
@@ -474,13 +545,8 @@
                             editBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
                             editBtn.textContent = 'Edit Wiki';
                             editBtn.onclick = () => {
-                                window.history.pushState({}, '', '/createwiki');
-                                editorTitleInput.value = data.title;
-                                editorContentInput.value = data.content;
-                                originalWikiIdInput.value = wikiDoc.id; // Store the original ID for updates
-                                updateMarkdownPreview();
-                                editorSection.classList.remove('hidden');
-                                mainContent.classList.add('hidden');
+                                window.history.pushState({}, '', `/editwiki/${wikiDoc.id}`);
+                                loadWikiPage(auth, db);
                             };
 
                             const deleteBtn = document.createElement('button');
@@ -582,7 +648,8 @@
                         title: pageTitle,
                         content: pageContent,
                         lastModified: new Date().toISOString(),
-                        isDeprecated: false // Clear the deprecated flag upon a new save
+                        isDeprecated: false, // Clear the deprecated flag upon a new save
+                        isTitleDeprecated: false
                     });
                     showMessage('Success!', `"${pageTitle}" has been updated.`);
                     window.history.pushState({}, '', `/wiki/${originalId}`);
@@ -596,7 +663,8 @@
                         authorName: user.displayName,
                         createdAt: new Date().toISOString(),
                         lastModified: new Date().toISOString(),
-                        isDeprecated: false
+                        isDeprecated: false,
+                        isTitleDeprecated: false
                     });
                     showMessage('Success!', `"${pageTitle}" has been saved.`);
                     window.history.pushState({}, '', `/wiki/${docId}`);
@@ -632,16 +700,27 @@
             }
 
             const reason = reportReason.value.trim();
+            const reportTypeSelected = reportType.value;
             const currentWikiId = window.location.pathname.split('/').filter(Boolean)[1];
             
-            // Get the current wiki's content
             const wikiDoc = await getDoc(doc(db, 'wikis', currentWikiId));
-            const wikiContentToReport = wikiDoc.exists() ? wikiDoc.data().content : '';
+            const wikiData = wikiDoc.exists() ? wikiDoc.data() : null;
 
-            // Construct a more detailed moderation prompt
-            const moderationPrompt = `Based on the following user report, is the provided wiki content a violation of community guidelines (e.g., hate speech, violence, explicit content, misinformation)? Respond with 'Yes' if it is a violation, and 'No' if it is not.
-            User Report: "${reason}"
-            Wiki Content: "${wikiContentToReport}"`;
+            if (!wikiData) {
+                showMessage('Error', 'Wiki page not found.');
+                return;
+            }
+
+            let moderationPrompt;
+            if (reportTypeSelected === 'content') {
+                moderationPrompt = `Based on the following user report, is the provided wiki content a violation of community guidelines (e.g., hate speech, violence, explicit content, misinformation)? Respond with 'Yes' if it is a violation, and 'No' if it is not.
+                User Report: "${reason}"
+                Wiki Content: "${wikiData.content}"`;
+            } else { // 'title'
+                moderationPrompt = `Based on the following user report, is the provided wiki title a violation of community guidelines (e.g., hate speech, violence, explicit content)? Respond with 'Yes' if it is a violation, and 'No' if it is not.
+                User Report: "${reason}"
+                Wiki Title: "${wikiData.title}"`;
+            }
 
             reportModal.classList.add('hidden');
             showMessage('Submitting Report', 'Please wait while we review the content...');
@@ -651,13 +730,18 @@
                 const responseText = result.response.text().trim();
                 
                 if (responseText.toLowerCase() === 'yes') {
-                    // Deprecate the page
-                    await updateDoc(doc(db, 'wikis', currentWikiId), {
-                        content: '',
-                        isDeprecated: true,
-                        lastModified: new Date().toISOString()
-                    });
-                    showMessage('Report Success!', 'The wiki page has been deprecated due to a violation.');
+                    if (reportTypeSelected === 'title') {
+                        await updateDoc(doc(db, 'wikis', currentWikiId), {
+                            isTitleDeprecated: true
+                        });
+                        showMessage('Report Success!', 'The wiki page topic has been deprecated due to a violation.');
+                    } else { // 'content'
+                        await updateDoc(doc(db, 'wikis', currentWikiId), {
+                            content: '',
+                            isDeprecated: true
+                        });
+                        showMessage('Report Success!', 'The wiki page has been deprecated due to a violation.');
+                    }
                 } else {
                     showMessage('Report Received', 'Thank you for your report. The content was reviewed and no violation was found at this time.');
                 }
@@ -680,6 +764,18 @@
         infoBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             infoMenu.classList.toggle('hidden');
+        });
+        
+        // Copy link functionality
+        copyLinkBtn.addEventListener('click', () => {
+            const currentUrl = window.location.href;
+            const tempInput = document.createElement('input');
+            document.body.appendChild(tempInput);
+            tempInput.value = currentUrl;
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showMessage('Link Copied!', 'The wiki link has been copied to your clipboard.');
         });
         
         document.addEventListener('click', (e) => {
