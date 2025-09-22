@@ -54,6 +54,17 @@
                 </div>
                 <div>
                     <label for="editor-content" class="block text-sm font-medium text-gray-700">Content (Markdown supported)</label>
+                    
+                    <!-- Markdown Buttons -->
+                    <div id="markdown-toolbar" class="flex flex-wrap gap-2 my-2">
+                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="# ">H1</button>
+                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="**">Bold</button>
+                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="_">Italic</button>
+                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="- ">List</button>
+                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="[]()">Link</button>
+                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="![]()">Image</button>
+                    </div>
+
                     <textarea id="editor-content" name="content" rows="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -110,6 +121,7 @@
         const wikiTitle = document.getElementById('wiki-title');
         const wikiContent = document.getElementById('wiki-content');
         const wikiActions = document.getElementById('wiki-actions');
+        const markdownToolbar = document.getElementById('markdown-toolbar');
 
         // Utility function to show a custom modal message
         function showMessage(title, message, confirmCallback = null) {
@@ -144,6 +156,31 @@
                 };
             }
             document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        // Function to handle markdown button clicks and insert syntax
+        function insertMarkdown(text, surrounding = false) {
+            const textarea = editorContentInput;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const originalText = textarea.value;
+
+            if (surrounding && start !== end) {
+                // Wrap selected text
+                const before = originalText.substring(0, start);
+                const selected = originalText.substring(start, end);
+                const after = originalText.substring(end);
+                textarea.value = `${before}${text}${selected}${text}${after}`;
+                textarea.selectionStart = start + text.length;
+                textarea.selectionEnd = end + text.length;
+            } else {
+                // Insert at cursor or at end if nothing is selected
+                const before = originalText.substring(0, start);
+                const after = originalText.substring(end);
+                textarea.value = `${before}${text}${after}`;
+                textarea.selectionStart = textarea.selectionEnd = start + text.length;
+            }
+            textarea.focus();
         }
 
         // --- Wiki Page Loading Logic ---
@@ -222,8 +259,21 @@
                     }
                 } else {
                     wikiTitle.textContent = 'Page Not Found';
-                    wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
-                        ${auth.currentUser ? 'You can create it!' : 'Sign in to create it.'}</p>`;
+                    wikiContent.innerHTML = `<p class="text-gray-500 mb-4">This wiki page does not exist.
+                        ${auth.currentUser ? '' : 'Sign in to create it.'}</p>`;
+                    
+                    if (auth.currentUser) {
+                        const createBtn = document.createElement('button');
+                        createBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                        createBtn.textContent = 'Create Wiki Here!';
+                        createBtn.onclick = () => {
+                            editorTitleInput.value = decodeURIComponent(wikiName).replace(/-/g, ' ');
+                            editorContentInput.value = '';
+                            editorSection.classList.remove('hidden');
+                            mainContent.classList.add('hidden');
+                        };
+                        wikiContent.appendChild(createBtn);
+                    }
                 }
             } catch (e) {
                 console.error("Error loading wiki:", e);
@@ -280,6 +330,18 @@
         cancelEditButton.addEventListener('click', () => {
             editorSection.classList.add('hidden');
             mainContent.classList.remove('hidden');
+        });
+
+        // Event listener for markdown buttons
+        markdownToolbar.addEventListener('click', (e) => {
+            if (e.target.classList.contains('markdown-btn')) {
+                const markdown = e.target.dataset.markdown;
+                if (markdown === '**' || markdown === '_' || markdown === '[]()' || markdown === '![]()') {
+                    insertMarkdown(markdown, true);
+                } else {
+                    insertMarkdown(markdown);
+                }
+            }
         });
 
         // Listen for history changes (back/forward buttons) to reload content
@@ -377,3 +439,4 @@
     </script>
 </body>
 </html>
+
