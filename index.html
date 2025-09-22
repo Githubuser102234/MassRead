@@ -12,13 +12,6 @@
             background-color: #f3f4f6;
             color: #1f2937;
         }
-        .prose {
-            max-width: 65ch;
-        }
-        .prose h1, .prose h2, .prose h3 {
-            color: #1f2937;
-            font-weight: 700;
-        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -84,202 +77,197 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
         
-        // --- Added: Correct imports for Auth and Firestore using version 12.3.0 ---
+        // --- Additional Firebase Imports for Auth and Firestore ---
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-        
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAhmPgZumTY82E7r2KWTzINHld5dqUVSBY",
-            authDomain: "massread-8c2db.firebaseapp.com",
-            projectId: "massread-8c2db",
-            storageBucket: "massread-8c2db.firebasestorage.app",
-            messagingSenderId: "225022727183",
-            appId: "1:225022727183:web:7d459a83eef33c81a7ff7a",
-            measurementId: "G-NDN4EHZRZZ"
-        };
-        
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
 
-        const authUi = document.getElementById('auth-ui');
-        const mainContent = document.getElementById('main-content');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const editorSection = document.getElementById('editor-section');
-        const wikiForm = document.getElementById('wiki-form');
-        const editorTitleInput = document.getElementById('editor-title');
-        const editorContentInput = document.getElementById('editor-content');
-        const cancelEditButton = document.getElementById('cancel-edit');
-        const wikiTitle = document.getElementById('wiki-title');
-        const wikiContent = document.getElementById('wiki-content');
-        
-        // Markdown library from CDN
-        import 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js';
+        // Markdown library from CDN - loaded with a standard script tag for reliability
+        const markdownScript = document.createElement('script');
+        markdownScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js';
+        document.head.appendChild(markdownScript);
 
-        // Utility function to show a custom modal message
-        function showMessage(title, message) {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-content').textContent = message;
-            document.getElementById('message-modal').classList.remove('hidden');
-        }
+        window.onload = function() {
+            // Your web app's Firebase configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyAhmPgZumTY82E7r2KWTzINHld5dqUVSBY",
+                authDomain: "massread-8c2db.firebaseapp.com",
+                projectId: "massread-8c2db",
+                storageBucket: "massread-8c2db.firebasestorage.app",
+                messagingSenderId: "225022727183",
+                appId: "1:225022727183:web:7d459a83eef33c81a7ff7a",
+                measurementId: "G-NDN4EHZRZZ"
+            };
+            
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            const analytics = getAnalytics(app);
 
-        // Handle modal closing
-        document.getElementById('modal-close').addEventListener('click', () => {
-            document.getElementById('message-modal').classList.add('hidden');
-        });
+            // --- Core Application Logic ---
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const provider = new GoogleAuthProvider();
 
-        // --- Wiki Page Loading Logic ---
-        async function loadWikiPage() {
-            loadingSpinner.classList.remove('hidden');
-            mainContent.classList.add('hidden');
-            editorSection.classList.add('hidden');
+            const authUi = document.getElementById('auth-ui');
+            const mainContent = document.getElementById('main-content');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const editorSection = document.getElementById('editor-section');
+            const wikiForm = document.getElementById('wiki-form');
+            const editorTitleInput = document.getElementById('editor-title');
+            const editorContentInput = document.getElementById('editor-content');
+            const cancelEditButton = document.getElementById('cancel-edit');
+            const wikiTitle = document.getElementById('wiki-title');
+            const wikiContent = document.getElementById('wiki-content');
 
-            const path = window.location.pathname.substring(1); // Remove leading slash
-            const parts = path.split('/');
-            const wikiName = parts[1] || 'Home'; // Default to 'Home' page
-
-            try {
-                console.log(`Attempting to load wiki: ${wikiName}`);
-                const wikiDocRef = doc(db, 'wikis', wikiName);
-                const wikiDoc = await getDoc(wikiDocRef);
-
-                if (wikiDoc.exists()) {
-                    const data = wikiDoc.data();
-                    wikiTitle.textContent = data.title;
-                    // Ensure marked is available before use
-                    if (window.marked) {
-                        wikiContent.innerHTML = window.marked.parse(data.content);
-                    } else {
-                        wikiContent.innerHTML = data.content;
-                    }
-                } else {
-                    wikiTitle.textContent = 'Page Not Found';
-                    wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
-                        ${auth.currentUser ? 'You can create it!' : 'Sign in to create it.'}</p>`;
-                }
-            } catch (e) {
-                console.error("Error loading wiki:", e);
-                wikiTitle.textContent = 'Error';
-                wikiContent.innerHTML = '<p class="text-red-500">Failed to load the page. Please check your internet connection.</p>';
-            } finally {
-                loadingSpinner.classList.add('hidden');
-                mainContent.classList.remove('hidden');
-            }
-        }
-
-        // --- Auth State Listener ---
-        let hasInitialized = false;
-        onAuthStateChanged(auth, (user) => {
-            authUi.innerHTML = ''; // Clear existing UI
-            if (user) {
-                // User is signed in
-                const userText = document.createElement('span');
-                userText.className = 'text-gray-600 text-sm md:text-base hidden sm:inline-block';
-                userText.textContent = `Hello, ${user.displayName}`;
-                
-                const signOutBtn = document.createElement('button');
-                signOutBtn.className = 'bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
-                signOutBtn.textContent = 'Sign Out';
-                signOutBtn.onclick = () => {
-                    signOut(auth).then(() => {
-                        showMessage('Signed Out', 'You have been signed out successfully.');
-                    }).catch((error) => {
-                        console.error("Sign Out Error:", error);
-                        showMessage('Error', 'Failed to sign out. Please try again.');
-                    });
-                };
-
-                const newWikiBtn = document.createElement('button');
-                newWikiBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
-                newWikiBtn.textContent = 'Create New Wiki';
-                newWikiBtn.onclick = () => {
-                    editorTitleInput.value = '';
-                    editorContentInput.value = '';
-                    editorSection.classList.remove('hidden');
-                    mainContent.classList.add('hidden');
-                };
-
-                authUi.appendChild(userText);
-                authUi.appendChild(newWikiBtn);
-                authUi.appendChild(signOutBtn);
-
-            } else {
-                // User is signed out
-                const signInBtn = document.createElement('button');
-                signInBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
-                signInBtn.textContent = 'Sign In with Google';
-                signInBtn.onclick = () => {
-                    signInWithPopup(auth, provider).then((result) => {
-                        const user = result.user;
-                        console.log("User signed in:", user.displayName);
-                    }).catch((error) => {
-                        const errorCode = error.code;
-                        const errorMessage = error.message;
-                        console.error("Sign In Error:", errorCode, errorMessage);
-                        showMessage('Sign In Failed', 'There was an error signing you in. Please try again.');
-                    });
-                };
-                authUi.appendChild(signInBtn);
-            }
-            if (!hasInitialized) {
-                loadWikiPage();
-                hasInitialized = true;
-            }
-        });
-
-        // --- Wiki Form Submission and Save Logic ---
-        wikiForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const user = auth.currentUser;
-            if (!user) {
-                showMessage('Authentication Required', 'You must be signed in to save a wiki page.');
-                return;
+            // Utility function to show a custom modal message
+            function showMessage(title, message) {
+                document.getElementById('modal-title').textContent = title;
+                document.getElementById('modal-content').textContent = message;
+                document.getElementById('message-modal').classList.remove('hidden');
             }
 
-            const pageTitle = editorTitleInput.value.trim();
-            const pageContent = editorContentInput.value.trim();
+            // Handle modal closing
+            document.getElementById('modal-close').addEventListener('click', () => {
+                document.getElementById('message-modal').classList.add('hidden');
+            });
 
-            if (!pageTitle) {
-                showMessage('Missing Title', 'Please enter a title for the wiki page.');
-                return;
-            }
-
-            // Create a simple slug from the title for the document ID
-            const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
-            try {
-                await setDoc(doc(db, 'wikis', docId), {
-                    title: pageTitle,
-                    content: pageContent,
-                    authorId: user.uid,
-                    authorName: user.displayName,
-                    createdAt: new Date().toISOString(),
-                    lastModified: new Date().toISOString()
-                });
-                showMessage('Success!', `"${pageTitle}" has been saved.`);
-                // Redirect to the new page path
-                window.history.pushState({}, '', `/wiki/${docId}`);
-                loadWikiPage();
-            } catch (e) {
-                console.error("Error saving wiki:", e);
-                showMessage('Error', 'Failed to save the wiki page. Please try again.');
-            } finally {
+            // --- Wiki Page Loading Logic ---
+            async function loadWikiPage() {
+                loadingSpinner.classList.remove('hidden');
+                mainContent.classList.add('hidden');
                 editorSection.classList.add('hidden');
-            }
-        });
-        
-        // --- Cancel Edit Button ---
-        cancelEditButton.addEventListener('click', () => {
-            editorSection.classList.add('hidden');
-            mainContent.classList.remove('hidden');
-        });
 
-        // Listen for history changes (back/forward buttons) to reload content
-        window.addEventListener('popstate', loadWikiPage);
+                const path = window.location.pathname.substring(1); // Remove leading slash
+                const parts = path.split('/');
+                const wikiName = parts[1] || 'Home'; // Default to 'Home' page
+
+                try {
+                    const wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
+                    if (wikiDoc.exists()) {
+                        const data = wikiDoc.data();
+                        wikiTitle.textContent = data.title;
+                        // Use marked.js to convert markdown to HTML
+                        wikiContent.innerHTML = marked.parse(data.content);
+                    } else {
+                        wikiTitle.textContent = 'Page Not Found';
+                        wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
+                            ${auth.currentUser ? 'You can create it!' : 'Sign in to create it.'}</p>`;
+                    }
+                } catch (e) {
+                    console.error("Error loading wiki:", e);
+                    wikiTitle.textContent = 'Error';
+                    wikiContent.innerHTML = '<p class="text-red-500">Failed to load the page. Please check your internet connection.</p>';
+                } finally {
+                    loadingSpinner.classList.add('hidden');
+                    mainContent.classList.remove('hidden');
+                }
+            }
+
+            // --- Auth State Listener ---
+            onAuthStateChanged(auth, (user) => {
+                authUi.innerHTML = ''; // Clear existing UI
+                if (user) {
+                    // User is signed in
+                    const userText = document.createElement('span');
+                    userText.className = 'text-gray-600 text-sm md:text-base hidden sm:inline-block';
+                    userText.textContent = `Hello, ${user.displayName}`;
+                    
+                    const signOutBtn = document.createElement('button');
+                    signOutBtn.className = 'bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                    signOutBtn.textContent = 'Sign Out';
+                    signOutBtn.onclick = () => {
+                        signOut(auth).then(() => {
+                            showMessage('Signed Out', 'You have been signed out successfully.');
+                        }).catch((error) => {
+                            console.error("Sign Out Error:", error);
+                            showMessage('Error', 'Failed to sign out. Please try again.');
+                        });
+                    };
+
+                    const newWikiBtn = document.createElement('button');
+                    newWikiBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                    newWikiBtn.textContent = 'Create New Wiki';
+                    newWikiBtn.onclick = () => {
+                        editorTitleInput.value = '';
+                        editorContentInput.value = '';
+                        editorSection.classList.remove('hidden');
+                        mainContent.classList.add('hidden');
+                    };
+
+                    authUi.appendChild(userText);
+                    authUi.appendChild(newWikiBtn);
+                    authUi.appendChild(signOutBtn);
+
+                } else {
+                    // User is signed out
+                    const signInBtn = document.createElement('button');
+                    signInBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                    signInBtn.textContent = 'Sign In with Google';
+                    signInBtn.onclick = () => {
+                        signInWithPopup(auth, provider).then((result) => {
+                            const user = result.user;
+                            console.log("User signed in:", user.displayName);
+                        }).catch((error) => {
+                            const errorCode = error.code;
+                            const errorMessage = error.message;
+                            console.error("Sign In Error:", errorCode, errorMessage);
+                            showMessage('Sign In Failed', 'There was an error signing you in. Please try again.');
+                        });
+                    };
+                    authUi.appendChild(signInBtn);
+                }
+                loadWikiPage();
+            });
+
+            // --- Wiki Form Submission and Save Logic ---
+            wikiForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const user = auth.currentUser;
+                if (!user) {
+                    showMessage('Authentication Required', 'You must be signed in to save a wiki page.');
+                    return;
+                }
+
+                const pageTitle = editorTitleInput.value.trim();
+                const pageContent = editorContentInput.value.trim();
+
+                if (!pageTitle) {
+                    showMessage('Missing Title', 'Please enter a title for the wiki page.');
+                    return;
+                }
+
+                // Create a simple slug from the title for the document ID
+                const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+                try {
+                    await setDoc(doc(db, 'wikis', docId), {
+                        title: pageTitle,
+                        content: pageContent,
+                        authorId: user.uid,
+                        authorName: user.displayName,
+                        createdAt: new Date().toISOString(),
+                        lastModified: new Date().toISOString()
+                    });
+                    showMessage('Success!', `"${pageTitle}" has been saved.`);
+                    // Redirect to the new page path
+                    window.history.pushState({}, '', `/wiki/${docId}`);
+                    loadWikiPage();
+                } catch (e) {
+                    console.error("Error saving wiki:", e);
+                    showMessage('Error', 'Failed to save the wiki page. Please try again.');
+                } finally {
+                    editorSection.classList.add('hidden');
+                }
+            });
+            
+            // --- Cancel Edit Button ---
+            cancelEditButton.addEventListener('click', () => {
+                editorSection.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+            });
+
+            // Listen for history changes (back/forward buttons) to reload content
+            window.addEventListener('popstate', loadWikiPage);
+        }
     </script>
 </body>
 </html>
