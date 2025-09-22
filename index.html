@@ -47,6 +47,16 @@
         <!-- Wiki Editor/Creator Form -->
         <div id="editor-section" class="hidden max-w-4xl mx-auto mt-6 bg-white rounded-xl shadow-lg p-6 md:p-8">
             <h3 class="text-2xl font-bold text-gray-800 mb-4">Edit Wiki Page</h3>
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button type="button" class="markdown-btn inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors" data-markdown="# ">H1</button>
+                <button type="button" class="markdown-btn inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors" data-markdown="## ">H2</button>
+                <button type="button" class="markdown-btn inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors" data-markdown="**">Bold</button>
+                <button type="button" class="markdown-btn inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors" data-markdown="*">Italic</button>
+                <button type="button" class="markdown-btn inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors" data-markdown="[Link Title](url)">Link</button>
+                <button type="button" class="markdown-btn inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors" data-markdown="> ">Quote</button>
+                <button type="button" class="markdown-btn inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors" data-markdown="- ">List</button>
+                <button type="button" class="markdown-btn inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors" data-markdown="```">Code Block</button>
+            </div>
             <form id="wiki-form" class="space-y-4">
                 <div>
                     <label for="editor-title" class="block text-sm font-medium text-gray-700">Page Title</label>
@@ -84,12 +94,12 @@
     <!-- Firebase SDK and Application Logic -->
     <script type="module">
         // --- Core Firebase SDK provided by the user ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+        import { initializeApp } from "[https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js](https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js)";
+        import { getAnalytics } from "[https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js](https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js)";
         
         // --- Additional Firebase Imports for Auth and Firestore ---
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "[https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js](https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js)";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "[https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js](https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js)";
 
         // Global variables for Firebase services
         let auth;
@@ -145,6 +155,44 @@
             }
             document.getElementById('message-modal').classList.remove('hidden');
         }
+
+        // --- Markdown Buttons Logic ---
+        function insertMarkdown(markdown) {
+            const textarea = editorContentInput;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const value = textarea.value;
+
+            // Handle specific markdown insertions
+            let newValue = value.substring(0, start) + markdown + value.substring(end);
+            let newCursorPosition = start + markdown.length;
+
+            if (markdown === '**') {
+                newValue = value.substring(0, start) + '**' + value.substring(start, end) + '**' + value.substring(end);
+                newCursorPosition = start + 2;
+            } else if (markdown === '*') {
+                newValue = value.substring(0, start) + '*' + value.substring(start, end) + '*' + value.substring(end);
+                newCursorPosition = start + 1;
+            } else if (markdown === '[Link Title](url)') {
+                newValue = value.substring(0, start) + '[Link Title]()' + value.substring(end);
+                newCursorPosition = start + '[Link Title]'.length + 1;
+            } else if (markdown === '```') {
+                newValue = value.substring(0, start) + '```\n\n```' + value.substring(end);
+                newCursorPosition = start + 3;
+            }
+
+            textarea.value = newValue;
+            textarea.focus();
+            textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+        }
+
+        document.querySelectorAll('.markdown-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const markdown = button.dataset.markdown;
+                insertMarkdown(markdown);
+            });
+        });
+
 
         // --- Wiki Page Loading Logic ---
         async function loadWikiPage(auth, db) {
@@ -222,8 +270,22 @@
                     }
                 } else {
                     wikiTitle.textContent = 'Page Not Found';
-                    wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
-                        ${auth.currentUser ? 'You can create it!' : 'Sign in to create it.'}</p>`;
+                    if (auth.currentUser) {
+                        const createBtn = document.createElement('button');
+                        createBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors mt-4';
+                        createBtn.textContent = 'Create Wiki Here!';
+                        createBtn.onclick = () => {
+                            editorTitleInput.value = wikiName === 'Home' ? '' : wikiName.replace(/-/g, ' ');
+                            editorContentInput.value = '';
+                            editorSection.classList.remove('hidden');
+                            mainContent.classList.add('hidden');
+                        };
+                        wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist. You can create it!</p>`;
+                        wikiContent.appendChild(createBtn);
+
+                    } else {
+                        wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist. Sign in to create it.</p>`;
+                    }
                 }
             } catch (e) {
                 console.error("Error loading wiki:", e);
