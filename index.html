@@ -20,11 +20,20 @@
 </head>
 <body class="flex flex-col min-h-screen">
     <!-- Header -->
-    <header class="bg-white shadow-md p-4 flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-gray-800">
-            <a href="/" class="hover:text-gray-600 transition-colors">Wiki Rip-Off</a>
-        </h1>
-        <div id="auth-ui" class="flex items-center space-x-4">
+    <header class="bg-white shadow-md p-4 flex items-center justify-between flex-wrap">
+        <div class="flex items-center space-x-4 mb-2 md:mb-0">
+            <h1 class="text-3xl font-bold text-gray-800">
+                <a href="/" class="hover:text-gray-600 transition-colors">Wiki Rip-Off</a>
+            </h1>
+        </div>
+        
+        <!-- Search bar -->
+        <div class="flex items-center space-x-2 w-full md:w-auto md:ml-auto">
+            <input type="text" id="search-input" placeholder="Search wikis..." class="flex-grow rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 text-sm bg-gray-100">
+            <button id="search-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg text-sm transition-colors">Search</button>
+        </div>
+
+        <div id="auth-ui" class="flex items-center space-x-4 ml-auto mt-2 md:mt-0">
             <!-- Auth UI will be populated by JavaScript -->
         </div>
     </header>
@@ -100,7 +109,7 @@
         
         // --- Additional Firebase Imports for Auth and Firestore ---
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
         
         // --- Firebase AI SDK for content moderation ---
         import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-ai.js";
@@ -127,6 +136,8 @@
         const wikiActions = document.getElementById('wiki-actions');
         const markdownToolbar = document.getElementById('markdown-toolbar');
         const saveWikiBtn = document.getElementById('save-wiki-btn');
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
 
         // Utility function to show a custom modal message
         function showMessage(title, message, confirmCallback = null) {
@@ -188,6 +199,59 @@
             textarea.focus();
         }
 
+        // --- Search Logic ---
+        async function searchWikis(queryText) {
+            loadingSpinner.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            editorSection.classList.add('hidden');
+            wikiActions.classList.add('hidden');
+            
+            wikiTitle.textContent = `Search Results for "${queryText}"`;
+            let resultsHtml = '';
+            
+            try {
+                const q = query(collection(db, 'wikis'));
+                const querySnapshot = await getDocs(q);
+                
+                const lowerCaseQuery = queryText.toLowerCase();
+                const results = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const title = data.title;
+                    const content = data.content;
+                    const docId = doc.id;
+                    
+                    if (title.toLowerCase().includes(lowerCaseQuery) || content.toLowerCase().includes(lowerCaseQuery)) {
+                        results.push({ id: docId, title: title });
+                    }
+                });
+                
+                if (results.length > 0) {
+                    resultsHtml = `<ul class="space-y-2">`;
+                    results.forEach(result => {
+                        resultsHtml += `
+                            <li>
+                                <a href="/wiki/${result.id}" class="text-indigo-600 hover:text-indigo-800 hover:underline transition-colors text-lg font-medium">
+                                    ${result.title}
+                                </a>
+                            </li>
+                        `;
+                    });
+                    resultsHtml += `</ul>`;
+                } else {
+                    resultsHtml = `<p class="text-gray-500">No results found for "${queryText}".</p>`;
+                }
+            } catch (e) {
+                console.error("Error searching wikis:", e);
+                resultsHtml = `<p class="text-red-500">Failed to perform search. Please try again.</p>`;
+            } finally {
+                wikiContent.innerHTML = resultsHtml;
+                loadingSpinner.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+            }
+        }
+        
         // --- Wiki Page Loading Logic ---
         async function loadWikiPage(auth, db) {
             loadingSpinner.classList.remove('hidden');
@@ -197,7 +261,25 @@
 
             const path = window.location.pathname.substring(1); // Remove leading slash
             const parts = path.split('/');
-            const wikiName = parts[1] || 'Home'; // Default to 'Home' page
+            const route = parts[0];
+            const wikiName = parts[1] || 'Home';
+            
+            // Check for the special 'createwiki' route
+            if (route === 'createwiki') {
+                if (!auth.currentUser) {
+                    wikiTitle.textContent = 'Authentication Required';
+                    wikiContent.innerHTML = '<p class="text-gray-500">You must be signed in to create a wiki page.</p>';
+                    loadingSpinner.classList.add('hidden');
+                    mainContent.classList.remove('hidden');
+                    return;
+                }
+                editorTitleInput.value = '';
+                editorContentInput.value = '';
+                editorSection.classList.remove('hidden');
+                mainContent.classList.add('hidden');
+                loadingSpinner.classList.add('hidden');
+                return;
+            }
 
             try {
                 let wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
@@ -272,6 +354,7 @@
                         createBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
                         createBtn.textContent = 'Create Wiki Here!';
                         createBtn.onclick = () => {
+                            window.history.pushState({}, '', '/createwiki');
                             editorTitleInput.value = decodeURIComponent(wikiName).replace(/-/g, ' ');
                             editorContentInput.value = '';
                             editorSection.classList.remove('hidden');
@@ -353,8 +436,7 @@
         
         // --- Cancel Edit Button ---
         cancelEditButton.addEventListener('click', () => {
-            editorSection.classList.add('hidden');
-            mainContent.classList.remove('hidden');
+            window.history.back();
         });
 
         // Event listener for markdown buttons
@@ -366,6 +448,20 @@
                 } else {
                     insertMarkdown(markdown);
                 }
+            }
+        });
+        
+        // Event listeners for search
+        searchBtn.addEventListener('click', () => {
+            const queryText = searchInput.value.trim();
+            if (queryText) {
+                searchWikis(queryText);
+            }
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchBtn.click();
             }
         });
 
@@ -437,10 +533,8 @@
                     newWikiBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
                     newWikiBtn.textContent = 'Create New Wiki';
                     newWikiBtn.onclick = () => {
-                        editorTitleInput.value = '';
-                        editorContentInput.value = '';
-                        editorSection.classList.remove('hidden');
-                        mainContent.classList.add('hidden');
+                        window.history.pushState({}, '', '/createwiki');
+                        loadWikiPage(auth, db);
                     };
 
                     authUi.appendChild(userText);
