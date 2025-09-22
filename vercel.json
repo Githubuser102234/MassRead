@@ -3,6 +3,10 @@
     {
       "source": "/wiki/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/createwiki",
+      "destination": "/index.html"
     }
   ]
 }
