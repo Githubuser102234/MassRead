@@ -123,11 +123,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </button>
-                    <!-- Link Icon -->
-                    <button id="copy-link-btn" class="text-gray-500 hover:text-gray-700 transition-colors focus:outline-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.881a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zM17.657 4.343a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101z" />
-                        </svg>
+                    <!-- Link Icon using image URL -->
+                    <button id="copy-link-btn" class="text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md">
+                        <img id="link-icon" src="https://massread.vercel.app/media/link.png" alt="Copy Link" class="h-6 w-6 transition-all duration-100 ease-in-out">
                     </button>
                     <!-- Info Mini Menu -->
                     <div id="info-menu" class="hidden absolute top-full left-0 mt-2 z-10 w-64 bg-white rounded-lg shadow-xl p-4 space-y-2">
@@ -282,6 +280,7 @@
         const titleDeprecatedMessage = document.getElementById('title-deprecated-message');
         const markdownPreview = document.getElementById('markdown-preview');
         const copyLinkBtn = document.getElementById('copy-link-btn');
+        const linkIcon = document.getElementById('link-icon');
 
         // Utility function to show a custom modal message
         function showMessage(title, message, confirmCallback = null) {
@@ -418,6 +417,7 @@
             // Hide info and link buttons by default
             infoBtn.classList.add('hidden');
             copyLinkBtn.classList.add('hidden');
+            reportBtn.classList.remove('hidden');
 
             const path = window.location.pathname;
             const parts = path.split('/').filter(Boolean); // Filter out empty strings
@@ -456,6 +456,7 @@
                     if (data.isTitleDeprecated) {
                          wikiTitle.textContent = data.title;
                          titleDeprecatedMessage.classList.remove('hidden');
+                         reportBtn.classList.add('hidden'); // Hide report button for title-deprecated wikis
                          wikiContent.innerHTML = '';
                          loadingSpinner.classList.add('hidden');
                          mainContent.classList.remove('hidden');
@@ -517,6 +518,7 @@
                         wikiContent.innerHTML = '';
                         titleDeprecatedMessage.classList.remove('hidden');
                         wikiActions.classList.add('hidden'); // Hide all actions
+                        reportBtn.classList.add('hidden'); // Hide report button for title-deprecated wikis
                     } else if (data.isDeprecated) {
                         wikiContent.innerHTML = '';
                         deprecatedMessage.classList.remove('hidden');
@@ -784,7 +786,7 @@
             infoMenu.classList.toggle('hidden');
         });
         
-        // Copy link functionality
+        // Copy link functionality with image hover/click effect
         copyLinkBtn.addEventListener('click', () => {
             const currentUrl = window.location.href;
             const tempInput = document.createElement('input');
@@ -796,6 +798,17 @@
             showMessage('Link Copied!', 'The wiki link has been copied to your clipboard.');
         });
         
+        // Change icon on mouse down and mouse up for hover effect
+        copyLinkBtn.addEventListener('mousedown', () => {
+            linkIcon.src = 'https://massread.vercel.app/media/link%20(1).png';
+        });
+        copyLinkBtn.addEventListener('mouseup', () => {
+            linkIcon.src = 'https://massread.vercel.app/media/link.png';
+        });
+        copyLinkBtn.addEventListener('mouseleave', () => {
+            linkIcon.src = 'https://massread.vercel.app/media/link.png';
+        });
+
         document.addEventListener('click', (e) => {
             if (!infoMenu.contains(e.target) && !infoBtn.contains(e.target)) {
                 infoMenu.classList.add('hidden');
