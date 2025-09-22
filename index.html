@@ -1,13 +1,274 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shimmer Loading Test</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiki Rip-Off</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md p-4 flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-gray-800">
+            <a href="/" class="hover:text-gray-600 transition-colors">Wiki Rip-Off</a>
+        </h1>
+        <div id="auth-ui" class="flex items-center space-x-4">
+            <!-- Auth UI will be populated by JavaScript -->
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow p-4 md:p-8">
+        <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
+            <div id="loading-spinner" class="hidden flex items-center justify-center h-48">
+                <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-900"></div>
+            </div>
+            <div id="main-content" class="hidden">
+                <h2 id="wiki-title" class="text-4xl font-bold text-gray-800 mb-4 break-words"></h2>
+                <div id="wiki-content" class="prose max-w-none text-gray-600"></div>
+            </div>
+        </div>
+        
+        <!-- Wiki Editor/Creator Form -->
+        <div id="editor-section" class="hidden max-w-4xl mx-auto mt-6 bg-white rounded-xl shadow-lg p-6 md:p-8">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Edit Wiki Page</h3>
+            <form id="wiki-form" class="space-y-4">
+                <div>
+                    <label for="editor-title" class="block text-sm font-medium text-gray-700">Page Title</label>
+                    <input type="text" id="editor-title" name="title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100" required>
+                </div>
+                <div>
+                    <label for="editor-content" class="block text-sm font-medium text-gray-700">Content (Markdown supported)</label>
+                    <textarea id="editor-content" name="content" rows="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button type="submit" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Save Wiki</button>
+                    <button type="button" id="cancel-edit" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Message Modal -->
+        <div id="message-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-75 p-4">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+                <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-2"></h3>
+                <p id="modal-content" class="text-gray-600 mb-4"></p>
+                <button id="modal-close" class="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">OK</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-4 text-center text-sm text-gray-500 bg-white shadow-inner mt-auto">
+        &copy; 2023 Wiki Rip-Off. Powered by Firestore & Vercel.
+    </footer>
+
+    <!-- Firebase SDK and Application Logic -->
+    <script type="module">
+        // --- Core Firebase SDK provided by the user ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyAhmPgZumTY82E7r2KWTzINHld5dqUVSBY",
+            authDomain: "massread-8c2db.firebaseapp.com",
+            projectId: "massread-8c2db",
+            storageBucket: "massread-8c2db.firebasestorage.app",
+            messagingSenderId: "225022727183",
+            appId: "1:225022727183:web:7d459a83eef33c81a7ff7a",
+            measurementId: "G-NDN4EHZRZZ"
+        };
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+
+        // --- Additional Firebase Imports for Auth and Firestore ---
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+        // --- Core Application Logic ---
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        const authUi = document.getElementById('auth-ui');
+        const mainContent = document.getElementById('main-content');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const editorSection = document.getElementById('editor-section');
+        const wikiForm = document.getElementById('wiki-form');
+        const editorTitleInput = document.getElementById('editor-title');
+        const editorContentInput = document.getElementById('editor-content');
+        const cancelEditButton = document.getElementById('cancel-edit');
+        const wikiTitle = document.getElementById('wiki-title');
+        const wikiContent = document.getElementById('wiki-content');
+
+        // Markdown library from CDN
+        const markdownScript = document.createElement('script');
+        markdownScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js';
+        document.head.appendChild(markdownScript);
+
+        // Utility function to show a custom modal message
+        function showMessage(title, message) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-content').textContent = message;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        // Handle modal closing
+        document.getElementById('modal-close').addEventListener('click', () => {
+            document.getElementById('message-modal').classList.add('hidden');
+        });
+
+        // --- Auth State Listener ---
+        onAuthStateChanged(auth, (user) => {
+            authUi.innerHTML = ''; // Clear existing UI
+            if (user) {
+                // User is signed in
+                const userText = document.createElement('span');
+                userText.className = 'text-gray-600 text-sm md:text-base hidden sm:inline-block';
+                userText.textContent = `Hello, ${user.displayName}`;
+                
+                const signOutBtn = document.createElement('button');
+                signOutBtn.className = 'bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                signOutBtn.textContent = 'Sign Out';
+                signOutBtn.onclick = () => {
+                    signOut(auth).then(() => {
+                        showMessage('Signed Out', 'You have been signed out successfully.');
+                    }).catch((error) => {
+                        console.error("Sign Out Error:", error);
+                        showMessage('Error', 'Failed to sign out. Please try again.');
+                    });
+                };
+
+                const newWikiBtn = document.createElement('button');
+                newWikiBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                newWikiBtn.textContent = 'Create New Wiki';
+                newWikiBtn.onclick = () => {
+                    editorTitleInput.value = '';
+                    editorContentInput.value = '';
+                    editorSection.classList.remove('hidden');
+                    mainContent.classList.add('hidden');
+                };
+
+                authUi.appendChild(userText);
+                authUi.appendChild(newWikiBtn);
+                authUi.appendChild(signOutBtn);
+
+            } else {
+                // User is signed out
+                const signInBtn = document.createElement('button');
+                signInBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                signInBtn.textContent = 'Sign In with Google';
+                signInBtn.onclick = () => {
+                    signInWithPopup(auth, provider).then((result) => {
+                        const user = result.user;
+                        console.log("User signed in:", user.displayName);
+                    }).catch((error) => {
+                        const errorCode = error.code;
+                        const errorMessage = error.message;
+                        console.error("Sign In Error:", errorCode, errorMessage);
+                        showMessage('Sign In Failed', 'There was an error signing you in. Please try again.');
+                    });
+                };
+                authUi.appendChild(signInBtn);
+            }
+            loadWikiPage();
+        });
+
+        // --- Wiki Page Loading Logic ---
+        async function loadWikiPage() {
+            loadingSpinner.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            editorSection.classList.add('hidden');
+
+            const path = window.location.pathname.substring(1); // Remove leading slash
+            const parts = path.split('/');
+            const wikiName = parts[1] || 'Home'; // Default to 'Home' page
+
+            try {
+                const wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
+                if (wikiDoc.exists()) {
+                    const data = wikiDoc.data();
+                    wikiTitle.textContent = data.title;
+                    // Use marked.js to convert markdown to HTML
+                    wikiContent.innerHTML = marked.parse(data.content);
+                } else {
+                    wikiTitle.textContent = 'Page Not Found';
+                    wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
+                        ${auth.currentUser ? 'You can create it!' : 'Sign in to create it.'}</p>`;
+                }
+            } catch (e) {
+                console.error("Error loading wiki:", e);
+                wikiTitle.textContent = 'Error';
+                wikiContent.innerHTML = '<p class="text-red-500">Failed to load the page. Please check your internet connection.</p>';
+            } finally {
+                loadingSpinner.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+            }
+        }
+
+        // --- Wiki Form Submission and Save Logic ---
+        wikiForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (!user) {
+                showMessage('Authentication Required', 'You must be signed in to save a wiki page.');
+                return;
+            }
+
+            const pageTitle = editorTitleInput.value.trim();
+            const pageContent = editorContentInput.value.trim();
+
+            if (!pageTitle) {
+                showMessage('Missing Title', 'Please enter a title for the wiki page.');
+                return;
+            }
+
+            // Create a simple slug from the title for the document ID
+            const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+            try {
+                await setDoc(doc(db, 'wikis', docId), {
+                    title: pageTitle,
+                    content: pageContent,
+                    authorId: user.uid,
+                    authorName: user.displayName,
+                    createdAt: new Date().toISOString(),
+                    lastModified: new Date().toISOString()
+                });
+                showMessage('Success!', `"${pageTitle}" has been saved.`);
+                // Redirect to the new page path
+                window.history.pushState({}, '', `/wiki/${docId}`);
+                loadWikiPage();
+            } catch (e) {
+                console.error("Error saving wiki:", e);
+                showMessage('Error', 'Failed to save the wiki page. Please try again.');
+            } finally {
+                editorSection.classList.add('hidden');
+            }
+        });
+        
+        // --- Cancel Edit Button ---
+        cancelEditButton.addEventListener('click', () => {
+            editorSection.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+        });
+
+        // Listen for history changes (back/forward buttons) to reload content
+        window.addEventListener('popstate', loadWikiPage);
+    </script>
+</body>
 </html>
 
