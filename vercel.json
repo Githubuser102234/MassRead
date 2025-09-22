@@ -9,6 +9,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/editwiki/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/search/:path*",
       "destination": "/index.html"
     }
