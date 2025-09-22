@@ -77,7 +77,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
         
-        // --- Additional Firebase Imports for Auth and Firestore ---
+        // --- The required imports for Authentication and Firestore ---
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
@@ -86,6 +86,7 @@
         markdownScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js';
         document.head.appendChild(markdownScript);
 
+        // Wait for all assets to load before running the app logic
         window.onload = function() {
             // Your web app's Firebase configuration
             const firebaseConfig = {
