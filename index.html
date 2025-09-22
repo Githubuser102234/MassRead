@@ -85,8 +85,121 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
-        // Wrap the entire application logic in an async function to be called by window.onload
-        async function main() {
+        // Global variables for Firebase services
+        let auth;
+        let db;
+
+        // A flag to ensure initial page load logic runs only once
+        let hasInitialized = false;
+
+        // --- Core Application Logic ---
+        const authUi = document.getElementById('auth-ui');
+        const mainContent = document.getElementById('main-content');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const editorSection = document.getElementById('editor-section');
+        const wikiForm = document.getElementById('wiki-form');
+        const editorTitleInput = document.getElementById('editor-title');
+        const editorContentInput = document.getElementById('editor-content');
+        const cancelEditButton = document.getElementById('cancel-edit');
+        const wikiTitle = document.getElementById('wiki-title');
+        const wikiContent = document.getElementById('wiki-content');
+
+        // Utility function to show a custom modal message
+        function showMessage(title, message) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-content').textContent = message;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        // Handle modal closing
+        document.getElementById('modal-close').addEventListener('click', () => {
+            document.getElementById('message-modal').classList.add('hidden');
+        });
+
+        // --- Wiki Page Loading Logic ---
+        async function loadWikiPage(auth, db) {
+            loadingSpinner.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            editorSection.classList.add('hidden');
+
+            const path = window.location.pathname.substring(1); // Remove leading slash
+            const parts = path.split('/');
+            const wikiName = parts[1] || 'Home'; // Default to 'Home' page
+
+            try {
+                const wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
+                if (wikiDoc.exists()) {
+                    const data = wikiDoc.data();
+                    wikiTitle.textContent = data.title;
+                    // Use marked.js to convert markdown to HTML
+                    wikiContent.innerHTML = marked.parse(data.content);
+                } else {
+                    wikiTitle.textContent = 'Page Not Found';
+                    wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
+                        ${auth.currentUser ? 'You can create it!' : 'Sign in to create it.'}</p>`;
+                }
+            } catch (e) {
+                console.error("Error loading wiki:", e);
+                wikiTitle.textContent = 'Error';
+                wikiContent.innerHTML = '<p class="text-red-500">Failed to load the page. Please check your internet connection.</p>';
+            } finally {
+                loadingSpinner.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+            }
+        }
+        
+        // --- Wiki Form Submission and Save Logic ---
+        wikiForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (!user) {
+                showMessage('Authentication Required', 'You must be signed in to save a wiki page.');
+                return;
+            }
+
+            const pageTitle = editorTitleInput.value.trim();
+            const pageContent = editorContentInput.value.trim();
+
+            if (!pageTitle) {
+                showMessage('Missing Title', 'Please enter a title for the wiki page.');
+                return;
+            }
+
+            // Create a simple slug from the title for the document ID
+            const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+            try {
+                await setDoc(doc(db, 'wikis', docId), {
+                    title: pageTitle,
+                    content: pageContent,
+                    authorId: user.uid,
+                    authorName: user.displayName,
+                    createdAt: new Date().toISOString(),
+                    lastModified: new Date().toISOString()
+                });
+                showMessage('Success!', `"${pageTitle}" has been saved.`);
+                // Redirect to the new page path
+                window.history.pushState({}, '', `/wiki/${docId}`);
+                loadWikiPage(auth, db);
+            } catch (e) {
+                console.error("Error saving wiki:", e);
+                showMessage('Error', 'Failed to save the wiki page. Please try again.');
+            } finally {
+                editorSection.classList.add('hidden');
+            }
+        });
+        
+        // --- Cancel Edit Button ---
+        cancelEditButton.addEventListener('click', () => {
+            editorSection.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+        });
+
+        // Listen for history changes (back/forward buttons) to reload content
+        window.addEventListener('popstate', () => loadWikiPage(auth, db));
+
+        // Wait for the window to load before starting the application
+        window.onload = function() {
             // Your web app's Firebase configuration
             const firebaseConfig = {
                 apiKey: "AIzaSyAhmPgZumTY82E7r2KWTzINHld5dqUVSBY",
@@ -98,82 +211,29 @@
                 measurementId: "G-NDN4EHZRZZ"
             };
             
-            // Initialize Firebase
+            // Initialize Firebase services and assign to global variables
             const app = initializeApp(firebaseConfig);
             const analytics = getAnalytics(app);
-
-            // --- Core Application Logic ---
-            const auth = getAuth(app);
-            const db = getFirestore(app);
+            auth = getAuth(app);
+            db = getFirestore(app);
             const provider = new GoogleAuthProvider();
 
-            const authUi = document.getElementById('auth-ui');
-            const mainContent = document.getElementById('main-content');
-            const loadingSpinner = document.getElementById('loading-spinner');
-            const editorSection = document.getElementById('editor-section');
-            const wikiForm = document.getElementById('wiki-form');
-            const editorTitleInput = document.getElementById('editor-title');
-            const editorContentInput = document.getElementById('editor-content');
-            const cancelEditButton = document.getElementById('cancel-edit');
-            const wikiTitle = document.getElementById('wiki-title');
-            const wikiContent = document.getElementById('wiki-content');
-
-            // Utility function to show a custom modal message
-            function showMessage(title, message) {
-                document.getElementById('modal-title').textContent = title;
-                document.getElementById('modal-content').textContent = message;
-                document.getElementById('message-modal').classList.remove('hidden');
-            }
-
-            // Handle modal closing
-            document.getElementById('modal-close').addEventListener('click', () => {
-                document.getElementById('message-modal').classList.add('hidden');
-            });
-
-            // A Promise that resolves when the auth state has been determined
-            const authReady = new Promise(resolve => {
-                onAuthStateChanged(auth, user => {
-                    resolve(user);
-                });
-            });
-
-            // Wait for auth to be ready before proceeding
-            const initialUser = await authReady;
-
-            // --- Wiki Page Loading Logic ---
-            async function loadWikiPage(auth, db) {
-                loadingSpinner.classList.remove('hidden');
-                mainContent.classList.add('hidden');
-                editorSection.classList.add('hidden');
-
-                const path = window.location.pathname.substring(1); // Remove leading slash
-                const parts = path.split('/');
-                const wikiName = parts[1] || 'Home'; // Default to 'Home' page
-
-                try {
-                    const wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
-                    if (wikiDoc.exists()) {
-                        const data = wikiDoc.data();
-                        wikiTitle.textContent = data.title;
-                        // Use marked.js to convert markdown to HTML
-                        wikiContent.innerHTML = marked.parse(data.content);
-                    } else {
-                        wikiTitle.textContent = 'Page Not Found';
-                        wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
-                            ${auth.currentUser ? 'You can create it!' : 'Sign in to create it.'}</p>`;
-                    }
-                } catch (e) {
-                    console.error("Error loading wiki:", e);
-                    wikiTitle.textContent = 'Error';
-                    wikiContent.innerHTML = '<p class="text-red-500">Failed to load the page. Please check your internet connection.</p>';
-                } finally {
-                    loadingSpinner.classList.add('hidden');
-                    mainContent.classList.remove('hidden');
+            // The main initialization logic wrapped in a listener
+            onAuthStateChanged(auth, (user) => {
+                if (!hasInitialized) {
+                    hasInitialized = true;
+                    // First time auth state is confirmed, load the UI and page
+                    loadWikiPage(auth, db);
+                    // Set up the rest of the UI based on the user
+                    setupAuthUI(user);
+                } else {
+                    // Update UI on subsequent auth state changes (e.g., sign in/out)
+                    setupAuthUI(user);
                 }
-            }
-            
-            // --- Set up the Auth UI and load the initial page based on the user's state ---
-            function updateAuthUI(user) {
+            });
+
+            // Function to set up the auth-related UI
+            function setupAuthUI(user) {
                 authUi.innerHTML = ''; // Clear existing UI
                 if (user) {
                     // User is signed in
@@ -226,65 +286,7 @@
                     authUi.appendChild(signInBtn);
                 }
             }
-
-            // Update UI on initial load and subsequent changes
-            updateAuthUI(initialUser);
-            loadWikiPage(auth, db);
-            onAuthStateChanged(auth, updateAuthUI); // Listen for future state changes
-
-            // --- Wiki Form Submission and Save Logic ---
-            wikiForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const user = auth.currentUser;
-                if (!user) {
-                    showMessage('Authentication Required', 'You must be signed in to save a wiki page.');
-                    return;
-                }
-
-                const pageTitle = editorTitleInput.value.trim();
-                const pageContent = editorContentInput.value.trim();
-
-                if (!pageTitle) {
-                    showMessage('Missing Title', 'Please enter a title for the wiki page.');
-                    return;
-                }
-
-                // Create a simple slug from the title for the document ID
-                const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
-                try {
-                    await setDoc(doc(db, 'wikis', docId), {
-                        title: pageTitle,
-                        content: pageContent,
-                        authorId: user.uid,
-                        authorName: user.displayName,
-                        createdAt: new Date().toISOString(),
-                        lastModified: new Date().toISOString()
-                    });
-                    showMessage('Success!', `"${pageTitle}" has been saved.`);
-                    // Redirect to the new page path
-                    window.history.pushState({}, '', `/wiki/${docId}`);
-                    loadWikiPage(auth, db);
-                } catch (e) {
-                    console.error("Error saving wiki:", e);
-                    showMessage('Error', 'Failed to save the wiki page. Please try again.');
-                } finally {
-                    editorSection.classList.add('hidden');
-                }
-            });
-            
-            // --- Cancel Edit Button ---
-            cancelEditButton.addEventListener('click', () => {
-                editorSection.classList.add('hidden');
-                mainContent.classList.remove('hidden');
-            });
-
-            // Listen for history changes (back/forward buttons) to reload content
-            window.addEventListener('popstate', () => loadWikiPage(auth, db));
-        }
-
-        // Run the main application logic when the window loads
-        window.onload = main;
+        };
     </script>
 </body>
 </html>
