@@ -13,6 +13,10 @@
             color: #1f2937;
         }
     </style>
+
+    <!-- Correctly load marked.js as a standard script tag -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js"></script>
+
 </head>
 <body class="flex flex-col min-h-screen">
     <!-- Header -->
@@ -77,14 +81,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
         
-        // --- The required imports for Authentication and Firestore ---
+        // --- Additional Firebase Imports for Auth and Firestore ---
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-
-        // Markdown library from CDN - loaded with a standard script tag for reliability
-        const markdownScript = document.createElement('script');
-        markdownScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js';
-        document.head.appendChild(markdownScript);
 
         // Wait for all assets to load before running the app logic
         window.onload = function() {
