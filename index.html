@@ -85,8 +85,8 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
-        // Wait for all assets to load before running the app logic
-        window.onload = function() {
+        // Wrap the entire application logic in an async function to be called by window.onload
+        async function main() {
             // Your web app's Firebase configuration
             const firebaseConfig = {
                 apiKey: "AIzaSyAhmPgZumTY82E7r2KWTzINHld5dqUVSBY",
@@ -130,8 +130,17 @@
                 document.getElementById('message-modal').classList.add('hidden');
             });
 
+            // A Promise that resolves when the auth state has been determined
+            const authReady = new Promise(resolve => {
+                onAuthStateChanged(auth, user => {
+                    resolve(user);
+                });
+            });
+
+            // Wait for auth to be ready before proceeding
+            const initialUser = await authReady;
+
             // --- Wiki Page Loading Logic ---
-            // Pass auth and db explicitly to ensure they are available
             async function loadWikiPage(auth, db) {
                 loadingSpinner.classList.remove('hidden');
                 mainContent.classList.add('hidden');
@@ -162,10 +171,9 @@
                     mainContent.classList.remove('hidden');
                 }
             }
-
-            // --- Auth State Listener ---
-            // This now calls the loading function with the auth and db objects
-            onAuthStateChanged(auth, (user) => {
+            
+            // --- Set up the Auth UI and load the initial page based on the user's state ---
+            function updateAuthUI(user) {
                 authUi.innerHTML = ''; // Clear existing UI
                 if (user) {
                     // User is signed in
@@ -217,8 +225,12 @@
                     };
                     authUi.appendChild(signInBtn);
                 }
-                loadWikiPage(auth, db);
-            });
+            }
+
+            // Update UI on initial load and subsequent changes
+            updateAuthUI(initialUser);
+            loadWikiPage(auth, db);
+            onAuthStateChanged(auth, updateAuthUI); // Listen for future state changes
 
             // --- Wiki Form Submission and Save Logic ---
             wikiForm.addEventListener('submit', async (e) => {
@@ -270,6 +282,9 @@
             // Listen for history changes (back/forward buttons) to reload content
             window.addEventListener('popstate', () => loadWikiPage(auth, db));
         }
+
+        // Run the main application logic when the window loads
+        window.onload = main;
     </script>
 </body>
 </html>
