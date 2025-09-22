@@ -80,14 +80,14 @@
 
     <!-- Firebase SDK and Application Logic -->
     <script type="module">
-        // --- ALL Firebase SDK imports using the same version and path prefix for consistency ---
+        // --- Core Firebase SDK provided by the user ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+        
+        // --- Added: Correct imports for Auth and Firestore using version 12.3.0 ---
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
         
-        // Markdown library from CDN
-        import 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js';
-
         // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAhmPgZumTY82E7r2KWTzINHld5dqUVSBY",
@@ -99,8 +99,9 @@
             measurementId: "G-NDN4EHZRZZ"
         };
         
-        // Initialize Firebase services
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
@@ -115,6 +116,9 @@
         const cancelEditButton = document.getElementById('cancel-edit');
         const wikiTitle = document.getElementById('wiki-title');
         const wikiContent = document.getElementById('wiki-content');
+        
+        // Markdown library from CDN
+        import 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.12/marked.min.js';
 
         // Utility function to show a custom modal message
         function showMessage(title, message) {
