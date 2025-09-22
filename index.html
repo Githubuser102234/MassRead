@@ -15,7 +15,7 @@
     </style>
 
     <!-- Correctly load marked.js from a working CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.12/marked.min.js"></script>
     
 </head>
 <body class="flex flex-col min-h-screen">
@@ -38,6 +38,9 @@
             <div id="main-content" class="hidden">
                 <h2 id="wiki-title" class="text-4xl font-bold text-gray-800 mb-4 break-words"></h2>
                 <div id="wiki-content" class="prose max-w-none text-gray-600"></div>
+                <div id="wiki-actions" class="mt-6 flex flex-wrap gap-2 hidden">
+                    <!-- Action buttons will go here -->
+                </div>
             </div>
         </div>
         
@@ -65,7 +68,10 @@
             <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
                 <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-2"></h3>
                 <p id="modal-content" class="text-gray-600 mb-4"></p>
-                <button id="modal-close" class="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">OK</button>
+                <div id="modal-buttons" class="flex justify-end space-x-4 mt-4">
+                    <button id="modal-cancel" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
+                    <button id="modal-confirm" class="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">OK</button>
+                </div>
             </div>
         </div>
     </main>
@@ -83,7 +89,7 @@
         
         // --- Additional Firebase Imports for Auth and Firestore ---
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
         // Global variables for Firebase services
         let auth;
@@ -103,36 +109,117 @@
         const cancelEditButton = document.getElementById('cancel-edit');
         const wikiTitle = document.getElementById('wiki-title');
         const wikiContent = document.getElementById('wiki-content');
+        const wikiActions = document.getElementById('wiki-actions');
 
         // Utility function to show a custom modal message
-        function showMessage(title, message) {
+        function showMessage(title, message, confirmCallback = null) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-content').textContent = message;
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            // Set button visibility based on if a callback is provided
+            if (confirmCallback) {
+                confirmBtn.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
+                // Remove any old event listeners
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+                // Add new listeners
+                confirmBtn.onclick = () => {
+                    document.getElementById('message-modal').classList.add('hidden');
+                    confirmCallback(true);
+                };
+                cancelBtn.onclick = () => {
+                    document.getElementById('message-modal').classList.add('hidden');
+                    confirmCallback(false);
+                };
+            } else {
+                confirmBtn.classList.remove('hidden');
+                cancelBtn.classList.add('hidden');
+                // Remove old event listeners
+                confirmBtn.onclick = null;
+                confirmBtn.onclick = () => {
+                    document.getElementById('message-modal').classList.add('hidden');
+                };
+            }
             document.getElementById('message-modal').classList.remove('hidden');
         }
-
-        // Handle modal closing
-        document.getElementById('modal-close').addEventListener('click', () => {
-            document.getElementById('message-modal').classList.add('hidden');
-        });
 
         // --- Wiki Page Loading Logic ---
         async function loadWikiPage(auth, db) {
             loadingSpinner.classList.remove('hidden');
             mainContent.classList.add('hidden');
             editorSection.classList.add('hidden');
+            wikiActions.classList.add('hidden');
 
             const path = window.location.pathname.substring(1); // Remove leading slash
             const parts = path.split('/');
             const wikiName = parts[1] || 'Home'; // Default to 'Home' page
 
             try {
-                const wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
+                let wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
+
+                // If the "Home" page doesn't exist, create it automatically
+                if (!wikiDoc.exists() && wikiName === 'Home') {
+                    const homeContent = "# Welcome to the Wiki!\nThis is the main page. You can edit this page or create a new one.";
+                    await setDoc(doc(db, 'wikis', 'Home'), {
+                        title: 'Home',
+                        content: homeContent,
+                        authorId: 'system',
+                        authorName: 'System',
+                        createdAt: new Date().toISOString(),
+                        lastModified: new Date().toISOString()
+                    });
+                    wikiDoc = await getDoc(doc(db, 'wikis', 'Home')); // Fetch the new doc
+                }
+
                 if (wikiDoc.exists()) {
                     const data = wikiDoc.data();
                     wikiTitle.textContent = data.title;
-                    // Use marked.js to convert markdown to HTML
                     wikiContent.innerHTML = marked.parse(data.content);
+                    
+                    // Show action buttons if a user is signed in
+                    if (auth.currentUser) {
+                        wikiActions.innerHTML = '';
+                        
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                        editBtn.textContent = 'Edit Wiki';
+                        editBtn.onclick = () => {
+                            editorTitleInput.value = data.title;
+                            editorContentInput.value = data.content;
+                            editorSection.classList.remove('hidden');
+                            mainContent.classList.add('hidden');
+                        };
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                        deleteBtn.textContent = 'Delete Wiki';
+                        deleteBtn.onclick = () => {
+                            showMessage(
+                                'Confirm Deletion', 
+                                `Are you sure you want to delete the wiki page titled "${data.title}"? This cannot be undone.`,
+                                async (confirmed) => {
+                                    if (confirmed) {
+                                        try {
+                                            await deleteDoc(doc(db, 'wikis', wikiName));
+                                            showMessage('Success!', 'The page has been deleted.');
+                                            window.history.pushState({}, '', '/');
+                                            loadWikiPage(auth, db);
+                                        } catch (e) {
+                                            console.error("Error deleting wiki:", e);
+                                            showMessage('Error', 'Failed to delete the page. Please try again.');
+                                        }
+                                    }
+                                }
+                            );
+                        };
+
+                        wikiActions.appendChild(editBtn);
+                        wikiActions.appendChild(deleteBtn);
+                        wikiActions.classList.remove('hidden');
+                    }
                 } else {
                     wikiTitle.textContent = 'Page Not Found';
                     wikiContent.innerHTML = `<p class="text-gray-500">This wiki page does not exist.
