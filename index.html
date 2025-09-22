@@ -126,7 +126,7 @@
                     <!-- Link Icon -->
                     <button id="copy-link-btn" class="text-gray-500 hover:text-gray-700 transition-colors focus:outline-none">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m.758-4.881a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zm-1.102-1.102a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zm-1.102-1.102a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zM17.657 4.343a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zm1.102-1.102a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zM17.657 4.343a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zM13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zm-4.475-1.102a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.881a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101zM17.657 4.343a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101z" />
                         </svg>
                     </button>
                     <!-- Info Mini Menu -->
@@ -641,22 +641,40 @@
                     saveWikiBtn.disabled = false;
                     return;
                 }
+                
+                // Determine the new document ID from the new title
+                const newDocId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
                 if (originalId) {
                     // Update existing wiki
-                    await updateDoc(doc(db, 'wikis', originalId), {
-                        title: pageTitle,
-                        content: pageContent,
-                        lastModified: new Date().toISOString(),
-                        isDeprecated: false, // Clear the deprecated flag upon a new save
-                        isTitleDeprecated: false
-                    });
+                    if (originalId !== newDocId) {
+                        // Title changed, so create a new document and delete the old one
+                        await setDoc(doc(db, 'wikis', newDocId), {
+                            title: pageTitle,
+                            content: pageContent,
+                            authorId: user.uid,
+                            authorName: user.displayName,
+                            createdAt: new Date().toISOString(),
+                            lastModified: new Date().toISOString(),
+                            isDeprecated: false,
+                            isTitleDeprecated: false
+                        });
+                        await deleteDoc(doc(db, 'wikis', originalId));
+                    } else {
+                        // Title did not change, just update the existing document
+                        await updateDoc(doc(db, 'wikis', originalId), {
+                            title: pageTitle,
+                            content: pageContent,
+                            lastModified: new Date().toISOString(),
+                            isDeprecated: false,
+                            isTitleDeprecated: false
+                        });
+                    }
                     showMessage('Success!', `"${pageTitle}" has been updated.`);
-                    window.history.pushState({}, '', `/wiki/${originalId}`);
+                    window.history.pushState({}, '', `/wiki/${newDocId}`);
                 } else {
                     // Create new wiki
-                    const docId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-                    await setDoc(doc(db, 'wikis', docId), {
+                    await setDoc(doc(db, 'wikis', newDocId), {
                         title: pageTitle,
                         content: pageContent,
                         authorId: user.uid,
@@ -667,7 +685,7 @@
                         isTitleDeprecated: false
                     });
                     showMessage('Success!', `"${pageTitle}" has been saved.`);
-                    window.history.pushState({}, '', `/wiki/${docId}`);
+                    window.history.pushState({}, '', `/wiki/${newDocId}`);
                 }
                 
                 loadWikiPage(auth, db);
