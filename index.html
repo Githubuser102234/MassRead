@@ -21,10 +21,58 @@
             background-color: #f9fafb;
             padding: 1rem;
         }
-        .prose img {
-            max-width: 100%;
-            height: auto;
+
+        /* Custom styles to ensure markdown is rendered correctly on the final page */
+        .wiki-prose h1, .wiki-prose h2, .wiki-prose h3 {
+            font-weight: 700;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }
+        .wiki-prose h1 { font-size: 2.5rem; }
+        .wiki-prose h2 { font-size: 2rem; }
+        .wiki-prose h3 { font-size: 1.5rem; }
+        .wiki-prose p {
+            margin-bottom: 1em;
+            line-height: 1.6;
+        }
+        .wiki-prose ul, .wiki-prose ol {
+            margin-bottom: 1em;
+            padding-left: 2em;
+        }
+        .wiki-prose ul { list-style-type: disc; }
+        .wiki-prose ol { list-style-type: decimal; }
+        .wiki-prose li {
+            margin-bottom: 0.5em;
+        }
+        .wiki-prose a {
+            color: #4f46e5;
+            text-decoration: underline;
+        }
+        .wiki-prose strong { font-weight: 700; }
+        .wiki-prose em { font-style: italic; }
+        .wiki-prose blockquote {
+            border-left: 4px solid #d1d5db;
+            padding-left: 1em;
+            color: #6b7280;
+            margin: 1em 0;
+        }
+        .wiki-prose pre {
+            background-color: #1f2937;
+            color: #f3f4f6;
+            padding: 1em;
             border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .wiki-prose code {
+            font-family: monospace;
+            background-color: #e5e7eb;
+            padding: 0.2em 0.4em;
+            border-radius: 0.25rem;
+        }
+        .wiki-prose pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
         }
     </style>
 
@@ -61,7 +109,7 @@
             <div id="main-content" class="hidden">
                 <h2 id="wiki-title" class="text-4xl font-bold text-gray-800 mb-2 break-words"></h2>
                 <div id="wiki-dates" class="text-gray-500 text-sm mb-4"></div>
-                <div id="wiki-content" class="prose max-w-none text-gray-600"></div>
+                <div id="wiki-content" class="wiki-prose max-w-none text-gray-600"></div>
                 <div id="wiki-actions" class="mt-6 flex flex-wrap gap-2 hidden">
                     <!-- Action buttons will go here -->
                 </div>
@@ -92,7 +140,7 @@
 
                     <div class="flex flex-col md:flex-row md:space-x-4">
                         <textarea id="editor-content" name="content" rows="15" class="mt-1 flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
-                        <div id="markdown-preview" class="markdown-preview mt-4 md:mt-1 flex-1"></div>
+                        <div id="markdown-preview" class="markdown-preview mt-4 md:mt-1 flex-1 wiki-prose"></div>
                     </div>
 
                 </div>
