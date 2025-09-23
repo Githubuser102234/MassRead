@@ -83,6 +83,14 @@
             border-radius: 0.5rem;
             text-align: center;
         }
+
+        /* SVG icon styling to make them look like buttons */
+        .icon-btn svg {
+            transition: all 0.2s;
+        }
+        .icon-btn:hover svg {
+            transform: scale(1.1);
+        }
     </style>
 
     <!-- Correctly load marked.js from a working CDN -->
@@ -116,21 +124,14 @@
                 <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-900"></div>
             </div>
             <div id="main-content" class="hidden">
-                <div class="flex items-center space-x-2 relative">
-                    <h2 id="wiki-title" class="text-4xl font-bold text-gray-800 mb-2 break-words"></h2>
-                    <button id="info-btn" class="text-gray-500 hover:text-gray-700 transition-colors focus:outline-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </button>
-                    <!-- Link Icon using SVG -->
-                    <button id="copy-link-btn" class="text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md">
-                        <svg id="link-svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link-2">
-                            <path d="M15 7h3a5 5 0 0 1 0 10h-3m-6 0H6A5 5 0 0 1 6 7h3m-2 5h8"></path>
-                        </svg>
-                    </button>
+                <div class="flex items-center justify-between relative">
+                    <h2 id="wiki-title" class="text-4xl font-bold text-gray-800 mb-2 break-words max-w-[calc(100%-150px)]"></h2>
+                    <div id="action-buttons-container" class="flex items-center space-x-2">
+                        <!-- Icons will be placed here by JS -->
+                    </div>
+                    
                     <!-- Info Mini Menu -->
-                    <div id="info-menu" class="hidden absolute top-full left-0 mt-2 z-10 w-64 bg-white rounded-lg shadow-xl p-4 space-y-2">
+                    <div id="info-menu" class="hidden absolute top-full right-0 mt-2 z-10 w-64 bg-white rounded-lg shadow-xl p-4 space-y-2">
                         <div id="info-dates" class="text-gray-500 text-sm"></div>
                         <button id="report-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">Report Wiki</button>
                     </div>
@@ -281,9 +282,8 @@
         const deprecatedMessage = document.getElementById('deprecated-message');
         const titleDeprecatedMessage = document.getElementById('title-deprecated-message');
         const markdownPreview = document.getElementById('markdown-preview');
-        const copyLinkBtn = document.getElementById('copy-link-btn');
-        const linkSvg = document.getElementById('link-svg');
-
+        const actionButtonsContainer = document.getElementById('action-buttons-container');
+        
         // Utility function to show a custom modal message
         function showMessage(title, message, confirmCallback = null) {
             document.getElementById('modal-title').textContent = title;
@@ -356,8 +356,7 @@
             editorSection.classList.add('hidden');
             wikiActions.classList.add('hidden');
             infoMenu.classList.add('hidden');
-            infoBtn.classList.add('hidden');
-            copyLinkBtn.classList.add('hidden');
+            actionButtonsContainer.innerHTML = '';
             
             wikiTitle.textContent = `Search Results for "${queryText}"`;
             let resultsHtml = '';
@@ -416,9 +415,7 @@
             titleDeprecatedMessage.classList.add('hidden');
             originalWikiIdInput.value = '';
             
-            // Hide info and link buttons by default
-            infoBtn.classList.add('hidden');
-            copyLinkBtn.classList.add('hidden');
+            actionButtonsContainer.innerHTML = '';
             reportBtn.classList.remove('hidden');
 
             const path = window.location.pathname;
@@ -507,14 +504,48 @@
                     const data = wikiDoc.data();
                     wikiTitle.textContent = data.title;
                     
-                    // Show info and link buttons
-                    infoBtn.classList.remove('hidden');
-                    copyLinkBtn.classList.remove('hidden');
-
                     // Display dates in the info menu
                     const createdAt = new Date(data.createdAt).toLocaleString();
                     const lastModified = new Date(data.lastModified).toLocaleString();
                     infoDates.innerHTML = `<p class="mb-2">Created On: <span class="font-bold">${createdAt}</span></p><p>Last Edited On: <span class="font-bold">${lastModified}</span></p>`;
+                    
+                    // Show action buttons container
+                    actionButtonsContainer.innerHTML = '';
+
+                    // The buttons that are always visible
+                    const infoBtn = document.createElement('button');
+                    infoBtn.id = 'info-btn';
+                    infoBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none';
+                    infoBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    `;
+                    infoBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        infoMenu.classList.toggle('hidden');
+                    });
+                    actionButtonsContainer.appendChild(infoBtn);
+                    
+                    const copyLinkBtn = document.createElement('button');
+                    copyLinkBtn.id = 'copy-link-btn';
+                    copyLinkBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md';
+                    copyLinkBtn.innerHTML = `
+                        <svg id="link-svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link-2">
+                            <path d="M15 7h3a5 5 0 0 1 0 10h-3m-6 0H6A5 5 0 0 1 6 7h3m-2 5h8"></path>
+                        </svg>
+                    `;
+                    copyLinkBtn.addEventListener('click', () => {
+                        const currentUrl = window.location.href;
+                        const tempInput = document.createElement('input');
+                        document.body.appendChild(tempInput);
+                        tempInput.value = currentUrl;
+                        tempInput.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempInput);
+                        showMessage('Link Copied!', 'The wiki link has been copied to your clipboard.');
+                    });
+                    actionButtonsContainer.appendChild(copyLinkBtn);
 
                     if (data.isTitleDeprecated) {
                         wikiContent.innerHTML = '';
@@ -541,21 +572,22 @@
 
                     } else {
                         wikiContent.innerHTML = marked.parse(data.content);
-                        // Show action buttons if a user is signed in and page is not deprecated
+                        // Show edit/delete icons if a user is signed in and page is not deprecated
                         if (auth.currentUser) {
-                            wikiActions.innerHTML = '';
-                            
                             const editBtn = document.createElement('button');
-                            editBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
-                            editBtn.textContent = 'Edit Wiki';
+                            editBtn.id = 'edit-btn';
+                            editBtn.className = 'text-blue-500 hover:text-blue-700 transition-colors focus:outline-none p-1 rounded-md icon-btn';
+                            editBtn.innerHTML = `<img src="https://massread.vercel.app/media/edit-svgrepo-com.svg" class="h-6 w-6">`;
                             editBtn.onclick = () => {
                                 window.history.pushState({}, '', `/editwiki/${wikiDoc.id}`);
                                 loadWikiPage(auth, db);
                             };
+                            actionButtonsContainer.appendChild(editBtn);
 
                             const deleteBtn = document.createElement('button');
-                            deleteBtn.className = 'bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
-                            deleteBtn.textContent = 'Delete Wiki';
+                            deleteBtn.id = 'delete-btn';
+                            deleteBtn.className = 'text-red-500 hover:text-red-700 transition-colors focus:outline-none p-1 rounded-md icon-btn';
+                            deleteBtn.innerHTML = `<img src="https://massread.vercel.app/media/delete-svgrepo-com.svg" class="h-6 w-6">`;
                             deleteBtn.onclick = () => {
                                 showMessage(
                                     'Confirm Deletion', 
@@ -575,10 +607,7 @@
                                     }
                                 );
                             };
-
-                            wikiActions.appendChild(editBtn);
-                            wikiActions.appendChild(deleteBtn);
-                            wikiActions.classList.remove('hidden');
+                            actionButtonsContainer.appendChild(deleteBtn);
                         }
                     }
 
@@ -745,7 +774,7 @@
             }
 
             reportModal.classList.add('hidden');
-            showMessage('Submitting Report', 'Please wait while we review the content...');
+            showMessage('Submitting Report', 'Please wait while we review the content and update the database.');
 
             try {
                 const result = await model.generateContent(moderationPrompt);
@@ -783,25 +812,11 @@
         });
 
         // Toggle info menu visibility
-        infoBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            infoMenu.classList.toggle('hidden');
-        });
-        
-        // Copy link functionality with SVG hover/click effect
-        copyLinkBtn.addEventListener('click', () => {
-            const currentUrl = window.location.href;
-            const tempInput = document.createElement('input');
-            document.body.appendChild(tempInput);
-            tempInput.value = currentUrl;
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            showMessage('Link Copied!', 'The wiki link has been copied to your clipboard.');
-        });
         
         document.addEventListener('click', (e) => {
-            if (!infoMenu.contains(e.target) && !infoBtn.contains(e.target)) {
+            const infoBtn = document.getElementById('info-btn');
+            const infoMenu = document.getElementById('info-menu');
+            if (infoBtn && infoMenu && !infoMenu.contains(e.target) && !infoBtn.contains(e.target)) {
                 infoMenu.classList.add('hidden');
             }
         });
@@ -936,3 +951,4 @@
     </script>
 </body>
 </html>
+
