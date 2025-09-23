@@ -503,31 +503,38 @@
             const identifier = parts[1] ? decodeURIComponent(parts[1]).replace(/\+/g, ' ') : '';
             const subRoute = parts[2] || '';
 
-            switch (route) {
-                case 'wiki':
-                    if (identifier === 'Home' || !identifier) {
-                        await showWiki('Home');
-                    } else {
-                        await showWiki(identifier);
-                    }
-                    break;
-                case 'createwiki':
-                    await showWikiEditor(null);
-                    break;
-                case 'editwiki':
-                    await showWikiEditor(identifier);
-                    break;
-                case 'search':
-                    await showSearch(identifier);
-                    break;
-                case 'profiles':
-                    await showProfile(identifier, subRoute);
-                    break;
-                default:
-                    // Fallback to home if route is unknown
-                    window.history.replaceState({}, '', '/');
-                    router();
-                    break;
+            // Check if the route is a profile username
+            const profilesCollection = collection(db, 'profiles');
+            const usernameQuery = query(profilesCollection, where('username', '==', route));
+            const usernameSnapshot = await getDocs(usernameQuery);
+            const isProfileRoute = !usernameSnapshot.empty;
+            
+            if (isProfileRoute) {
+                 await showProfile(route, identifier);
+            } else {
+                 switch (route) {
+                    case 'wiki':
+                        if (identifier === 'Home' || !identifier) {
+                            await showWiki('Home');
+                        } else {
+                            await showWiki(identifier);
+                        }
+                        break;
+                    case 'createwiki':
+                        await showWikiEditor(null);
+                        break;
+                    case 'editwiki':
+                        await showWikiEditor(identifier);
+                        break;
+                    case 'search':
+                        await showSearch(identifier);
+                        break;
+                    default:
+                        // Fallback to home if route is unknown
+                        window.history.replaceState({}, '', '/');
+                        router();
+                        break;
+                }
             }
             loadingSpinner.classList.add('hidden');
         }
@@ -1022,7 +1029,7 @@
                 }, { merge: true });
 
                 showMessage('Profile Saved!', 'Your profile has been successfully saved.');
-                window.history.pushState({}, '', `/profiles/@${username}`);
+                window.history.pushState({}, '', `/${username}`);
                 router();
 
             } catch (e) {
@@ -1040,7 +1047,7 @@
         
         // User Wiki Events
         editUserWikiBtn.addEventListener('click', () => {
-             window.history.pushState({}, '', `/profiles/@${currentUsername}/userwiki`);
+             window.history.pushState({}, '', `/${currentUsername}/userwiki`);
              router();
         });
         
@@ -1088,7 +1095,7 @@
                 });
 
                 showMessage('User Wiki Saved!', 'Your user wiki has been saved.');
-                window.history.pushState({}, '', `/profiles/@${currentUsername}`);
+                window.history.pushState({}, '', `/${currentUsername}`);
                 router();
             } catch (e) {
                 console.error("Error saving user wiki:", e);
@@ -1258,7 +1265,7 @@
                     } else {
                         username = profileDoc.data().username;
                         const profileBtn = document.createElement('a');
-                        profileBtn.href = `/profiles/@${username}`;
+                        profileBtn.href = `/${username}`;
                         profileBtn.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg text-sm transition-colors';
                         profileBtn.textContent = 'My Profile';
                         authUi.appendChild(profileBtn);
