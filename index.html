@@ -524,61 +524,55 @@
                         document.body.removeChild(tempInput);
                         showMessage('Link Copied!', 'The wiki link has been copied to your clipboard.');
                     };
+                    
+                    // Conditionally add edit/delete buttons and the copy link button
+                    if (auth.currentUser) {
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'text-blue-500 hover:text-blue-600 transition-colors focus:outline-none p-1 rounded-md';
+                        editBtn.innerHTML = editSvg;
+                        editBtn.onclick = () => {
+                            window.history.pushState({}, '', `/editwiki/${wikiDoc.id}`);
+                            loadWikiPage(auth, db);
+                        };
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'text-red-500 hover:text-red-600 transition-colors focus:outline-none p-1 rounded-md';
+                        deleteBtn.innerHTML = deleteSvg;
+                        deleteBtn.onclick = () => {
+                            showMessage(
+                                'Confirm Deletion', 
+                                `Are you sure you want to delete the wiki page titled "${data.title}"? This cannot be undone.`,
+                                async (confirmed) => {
+                                    if (confirmed) {
+                                        try {
+                                            await deleteDoc(doc(db, 'wikis', wikiName));
+                                            showMessage('Success!', 'The page has been deleted.');
+                                            window.history.pushState({}, '', '/');
+                                            loadWikiPage(auth, db);
+                                        } catch (e) {
+                                            console.error("Error deleting wiki:", e);
+                                            showMessage('Error', 'Failed to delete the page. Please try again.');
+                                        }
+                                    }
+                                }
+                            );
+                        };
+                        
+                        wikiHeaderActions.appendChild(copyLinkBtn);
+                        wikiHeaderActions.appendChild(editBtn);
+                        wikiHeaderActions.appendChild(deleteBtn);
+                    } else {
+                        wikiHeaderActions.appendChild(copyLinkBtn);
+                    }
 
                     wikiHeaderActions.appendChild(infoBtn);
-                    wikiHeaderActions.appendChild(copyLinkBtn);
+
 
                     // Display dates in the info menu
                     const createdAt = new Date(data.createdAt).toLocaleString();
                     const lastModified = new Date(data.lastModified).toLocaleString();
                     infoDates.innerHTML = `<p class="mb-2">Created On: <span class="font-bold">${createdAt}</span></p><p>Last Edited On: <span class="font-bold">${lastModified}</span></p>`;
 
-                    // Show edit and delete buttons if the user is logged in and the page is not deprecated
-                    if (auth.currentUser) {
-                        if (!data.isTitleDeprecated && !data.isDeprecated) {
-                            const editBtn = document.createElement('button');
-                            editBtn.className = 'text-blue-500 hover:text-blue-600 transition-colors focus:outline-none p-1 rounded-md';
-                            editBtn.innerHTML = editSvg;
-                            editBtn.onclick = () => {
-                                window.history.pushState({}, '', `/editwiki/${wikiDoc.id}`);
-                                loadWikiPage(auth, db);
-                            };
-
-                            const deleteBtn = document.createElement('button');
-                            deleteBtn.className = 'text-red-500 hover:text-red-600 transition-colors focus:outline-none p-1 rounded-md';
-                            deleteBtn.innerHTML = deleteSvg;
-                            deleteBtn.onclick = () => {
-                                showMessage(
-                                    'Confirm Deletion', 
-                                    `Are you sure you want to delete the wiki page titled "${data.title}"? This cannot be undone.`,
-                                    async (confirmed) => {
-                                        if (confirmed) {
-                                            try {
-                                                await deleteDoc(doc(db, 'wikis', wikiName));
-                                                showMessage('Success!', 'The page has been deleted.');
-                                                window.history.pushState({}, '', '/');
-                                                loadWikiPage(auth, db);
-                                            } catch (e) {
-                                                console.error("Error deleting wiki:", e);
-                                                showMessage('Error', 'Failed to delete the page. Please try again.');
-                                            }
-                                        }
-                                    }
-                                );
-                            };
-                            wikiHeaderActions.appendChild(editBtn);
-                            wikiHeaderActions.appendChild(deleteBtn);
-                        } else if (data.isDeprecated) {
-                            const editBtn = document.createElement('button');
-                            editBtn.className = 'text-blue-500 hover:text-blue-600 transition-colors focus:outline-none p-1 rounded-md';
-                            editBtn.innerHTML = editSvg;
-                            editBtn.onclick = () => {
-                                window.history.pushState({}, '', `/editwiki/${wikiDoc.id}`);
-                                loadWikiPage(auth, db);
-                            };
-                            wikiHeaderActions.appendChild(editBtn);
-                        }
-                    }
 
                     if (data.isTitleDeprecated) {
                         wikiContent.innerHTML = '';
@@ -601,7 +595,7 @@
                         createBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
                         createBtn.textContent = 'Create Wiki Here!';
                         createBtn.onclick = () => {
-                            window.history.pushState({}, '', `/createwiki`);
+                            window.history.pushState({}, '', '/createwiki');
                             editorTitleInput.value = decodeURIComponent(wikiName).replace(/-/g, ' ');
                             loadWikiPage(auth, db);
                         };
