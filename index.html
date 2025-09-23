@@ -91,6 +91,14 @@
         .icon-btn:hover svg {
             transform: scale(1.1);
         }
+        
+        .profile-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #d1d5db;
+        }
     </style>
 
     <!-- Correctly load marked.js from a working CDN -->
@@ -123,7 +131,9 @@
             <div id="loading-spinner" class="hidden flex items-center justify-center h-48">
                 <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-900"></div>
             </div>
-            <div id="main-content" class="hidden">
+            
+            <!-- Wiki Content Section -->
+            <div id="wiki-content-section" class="hidden">
                 <div class="flex items-center justify-between relative">
                     <h2 id="wiki-title" class="text-4xl font-bold text-gray-800 mb-2 break-words max-w-[calc(100%-150px)]"></h2>
                     <div id="action-buttons-container" class="flex items-center space-x-2">
@@ -133,7 +143,7 @@
                     <!-- Info Mini Menu -->
                     <div id="info-menu" class="hidden absolute top-full right-0 mt-2 z-10 w-64 bg-white rounded-lg shadow-xl p-4 space-y-2">
                         <div id="info-dates" class="text-gray-500 text-sm"></div>
-                        <button id="report-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">Report Wiki</button>
+                        <button id="report-wiki-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">Report Wiki</button>
                     </div>
                 </div>
                 
@@ -151,78 +161,174 @@
                     <!-- Action buttons will go here -->
                 </div>
             </div>
-        </div>
-        
-        <!-- Wiki Editor/Creator Form -->
-        <div id="editor-section" class="hidden max-w-full mx-auto mt-6 bg-white rounded-xl shadow-lg p-6 md:p-8">
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">Edit Wiki Page</h3>
-            <form id="wiki-form" class="space-y-4">
-                <div>
-                    <label for="editor-title" class="block text-sm font-medium text-gray-700">Page Title</label>
-                    <input type="text" id="editor-title" name="title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100" required>
-                    <input type="hidden" id="original-wiki-id" value="">
-                </div>
-                <div>
-                    <label for="editor-content" class="block text-sm font-medium text-gray-700">Content (Markdown supported)</label>
-                    
-                    <!-- Markdown Buttons -->
-                    <div id="markdown-toolbar" class="flex flex-wrap gap-2 my-2">
-                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="# ">H1</button>
-                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="**">Bold</button>
-                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="_">Italic</button>
-                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="- ">List</button>
-                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="[]()">Link</button>
-                        <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="![]()">Image</button>
-                    </div>
 
-                    <div class="flex flex-col md:flex-row md:space-x-4">
-                        <textarea id="editor-content" name="content" rows="15" class="mt-1 flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
-                        <div id="markdown-preview" class="markdown-preview mt-4 md:mt-1 flex-1 wiki-prose"></div>
-                    </div>
-
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button type="submit" id="save-wiki-btn" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Save Wiki</button>
-                    <button type="button" id="cancel-edit" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Message Modal -->
-        <div id="message-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-75 p-4">
-            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-                <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-2"></h3>
-                <p id="modal-content" class="text-gray-600 mb-4"></p>
-                <div id="modal-buttons" class="flex justify-end space-x-4 mt-4">
-                    <button id="modal-cancel" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
-                    <button id="modal-confirm" class="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">OK</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Report Modal -->
-        <div id="report-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-75 p-4">
-            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
-                <h3 class="text-xl font-bold text-gray-800 mb-2">Report Wiki Page</h3>
-                <p class="text-gray-600 mb-4">Please provide more information about why this wiki violates our guidelines.</p>
-                <form id="report-form" class="space-y-4">
+            <!-- Wiki Editor/Creator Form -->
+            <div id="editor-section" class="hidden max-w-full mx-auto bg-white rounded-xl shadow-lg">
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Edit Wiki Page</h3>
+                <form id="wiki-form" class="space-y-4">
                     <div>
-                        <label for="report-type" class="block text-sm font-medium text-gray-700">What are you reporting?</label>
-                        <select id="report-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100">
-                            <option value="content">Content</option>
-                            <option value="title">Title</option>
-                        </select>
+                        <label for="editor-title" class="block text-sm font-medium text-gray-700">Page Title</label>
+                        <input type="text" id="editor-title" name="title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100" required>
+                        <input type="hidden" id="original-wiki-id" value="">
                     </div>
                     <div>
-                        <label for="report-reason" class="block text-sm font-medium text-gray-700">More details:</label>
-                        <textarea id="report-reason" rows="6" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100" placeholder="e.g., This content is misleading and contains hate speech." required></textarea>
+                        <label for="editor-content" class="block text-sm font-medium text-gray-700">Content (Markdown supported)</label>
+                        
+                        <!-- Markdown Buttons -->
+                        <div id="markdown-toolbar" class="flex flex-wrap gap-2 my-2">
+                            <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="# ">H1</button>
+                            <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="**">Bold</button>
+                            <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="_">Italic</button>
+                            <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="- ">List</button>
+                            <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="[]()">Link</button>
+                            <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="![]()">Image</button>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row md:space-x-4">
+                            <textarea id="editor-content" name="content" rows="15" class="mt-1 flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
+                            <div id="markdown-preview" class="markdown-preview mt-4 md:mt-1 flex-1 wiki-prose"></div>
+                        </div>
+
                     </div>
-                    
-                    <div class="flex justify-end space-x-4">
-                        <button type="button" id="report-cancel-btn" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
-                        <button type="submit" id="report-submit-btn" class="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">Submit Report</button>
+                    <div class="flex items-center space-x-4">
+                        <button type="submit" id="save-wiki-btn" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Save Wiki</button>
+                        <button type="button" id="cancel-edit" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
                     </div>
                 </form>
+            </div>
+            
+            <!-- User Profile Section -->
+            <div id="profile-section" class="hidden">
+                <div id="profile-view" class="hidden">
+                    <div class="flex items-center space-x-6">
+                        <img id="profile-photo" class="profile-photo shadow-lg" alt="Profile Picture">
+                        <div class="flex-1">
+                            <h2 id="profile-display-name" class="text-3xl font-bold text-gray-800"></h2>
+                            <p id="profile-username" class="text-gray-500 text-lg"></p>
+                        </div>
+                    </div>
+                    <div id="profile-bio-deprecated-message" class="hidden mt-6 deprecated-box">
+                        <p class="font-bold">This user's bio has been flagged for a content policy violation.</p>
+                    </div>
+                    <p id="profile-bio" class="mt-4 text-gray-600 leading-relaxed"></p>
+                    <div class="mt-6 flex flex-wrap gap-2">
+                        <button id="edit-profile-btn" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors">Edit Profile</button>
+                        <button id="delete-profile-btn" class="hidden bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors">Delete Profile</button>
+                        <button id="report-profile-btn" class="hidden bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors">Report Profile</button>
+                    </div>
+                    
+                    <hr class="my-8">
+                    
+                    <div id="user-wiki-section">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-2xl font-bold text-gray-800">User Wiki</h3>
+                            <div class="flex items-center space-x-2">
+                                <button id="edit-user-wiki-btn" class="hidden text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                <button id="report-user-wiki-btn" class="hidden text-red-500 hover:text-red-700 transition-colors focus:outline-none p-1 rounded-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="user-wiki-deprecated-message" class="hidden mt-4 deprecated-box">
+                            <p class="font-bold">This user wiki has been flagged for a content policy violation.</p>
+                        </div>
+                        <div id="user-wiki-content" class="wiki-prose max-w-none text-gray-600 mt-4"></div>
+                    </div>
+                </div>
+                
+                <div id="profile-editor" class="hidden">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Create Your Profile</h3>
+                    <form id="profile-form" class="space-y-4">
+                        <div>
+                            <label for="profile-username-input" class="block text-sm font-medium text-gray-700">Permanent Username <span class="text-red-500 text-xs">(cannot be changed)</span></label>
+                            <input type="text" id="profile-username-input" name="username" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100" required pattern="[a-zA-Z0-9-]+" title="Only letters, numbers, and dashes are allowed.">
+                        </div>
+                        <div>
+                            <label for="profile-displayname-input" class="block text-sm font-medium text-gray-700">Display Name (Optional)</label>
+                            <input type="text" id="profile-displayname-input" name="displayName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100">
+                        </div>
+                        <div>
+                            <label for="profile-bio-input" class="block text-sm font-medium text-gray-700">Bio (Optional)</label>
+                            <textarea id="profile-bio-input" name="bio" rows="6" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button type="submit" id="save-profile-btn" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Save Profile</button>
+                            <button type="button" id="cancel-profile-edit-btn" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="user-wiki-editor" class="hidden">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Edit Your User Wiki</h3>
+                    <form id="user-wiki-form" class="space-y-4">
+                        <div>
+                            <label for="user-wiki-content-input" class="block text-sm font-medium text-gray-700">Content (Markdown supported)</label>
+                            <div id="user-wiki-markdown-toolbar" class="flex flex-wrap gap-2 my-2">
+                                <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="# ">H1</button>
+                                <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="**">Bold</button>
+                                <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="_">Italic</button>
+                                <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="- ">List</button>
+                                <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="[]()">Link</button>
+                                <button type="button" class="markdown-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded-lg text-sm transition-colors" data-markdown="![]()">Image</button>
+                            </div>
+                            <div class="flex flex-col md:flex-row md:space-x-4">
+                                <textarea id="user-wiki-content-input" name="content" rows="15" class="mt-1 flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100"></textarea>
+                                <div id="user-wiki-preview" class="markdown-preview mt-4 md:mt-1 flex-1 wiki-prose"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button type="submit" id="save-user-wiki-btn" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Save User Wiki</button>
+                            <button type="button" id="cancel-user-wiki-edit-btn" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Message Modal -->
+            <div id="message-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-75 p-4">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+                    <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-2"></h3>
+                    <p id="modal-content" class="text-gray-600 mb-4"></p>
+                    <div id="modal-buttons" class="flex justify-end space-x-4 mt-4">
+                        <button id="modal-cancel" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
+                        <button id="modal-confirm" class="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">OK</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Modal -->
+            <div id="report-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-75 p-4">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Report Content</h3>
+                    <p class="text-gray-600 mb-4">Please provide more information about why this content violates our guidelines.</p>
+                    <form id="report-form" class="space-y-4">
+                        <input type="hidden" id="report-type-content" value="">
+                        <div>
+                            <label for="report-type" class="block text-sm font-medium text-gray-700">What are you reporting?</label>
+                            <select id="report-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100">
+                                <option value="wiki-content">Wiki Content</option>
+                                <option value="wiki-title">Wiki Title</option>
+                                <option value="profile-bio">Profile Bio</option>
+                                <option value="user-wiki">User Wiki</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="report-reason" class="block text-sm font-medium text-gray-700">More details:</label>
+                            <textarea id="report-reason" rows="6" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-gray-100" placeholder="e.g., This content is misleading and contains hate speech." required></textarea>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" id="report-cancel-btn" class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">Cancel</button>
+                            <button type="submit" id="report-submit-btn" class="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">Submit Report</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </main>
@@ -240,7 +346,7 @@
         
         // --- Additional Firebase Imports for Auth and Firestore ---
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
         
         // --- Firebase AI SDK for content moderation ---
         import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-ai.js";
@@ -255,50 +361,89 @@
 
         // --- Core Application Logic ---
         const authUi = document.getElementById('auth-ui');
-        const mainContent = document.getElementById('main-content');
         const loadingSpinner = document.getElementById('loading-spinner');
-        const editorSection = document.getElementById('editor-section');
-        const wikiForm = document.getElementById('wiki-form');
-        const editorTitleInput = document.getElementById('editor-title');
-        const editorContentInput = document.getElementById('editor-content');
-        const originalWikiIdInput = document.getElementById('original-wiki-id');
-        const cancelEditButton = document.getElementById('cancel-edit');
-        const wikiTitle = document.getElementById('wiki-title');
-        const wikiContent = document.getElementById('wiki-content');
-        const wikiActions = document.getElementById('wiki-actions');
-        const markdownToolbar = document.getElementById('markdown-toolbar');
-        const saveWikiBtn = document.getElementById('save-wiki-btn');
-        const searchInput = document.getElementById('search-input');
-        const searchBtn = document.getElementById('search-btn');
-        const infoBtn = document.getElementById('info-btn');
-        const infoMenu = document.getElementById('info-menu');
-        const infoDates = document.getElementById('info-dates');
-        const reportBtn = document.getElementById('report-btn');
         const reportModal = document.getElementById('report-modal');
         const reportForm = document.getElementById('report-form');
         const reportType = document.getElementById('report-type');
         const reportReason = document.getElementById('report-reason');
         const reportCancelBtn = document.getElementById('report-cancel-btn');
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
+        const markdownToolbar = document.getElementById('markdown-toolbar');
+        
+        // Sections
+        const wikiContentSection = document.getElementById('wiki-content-section');
+        const editorSection = document.getElementById('editor-section');
+        const profileSection = document.getElementById('profile-section');
+
+        // Wiki Elements
+        const wikiTitle = document.getElementById('wiki-title');
+        const wikiContent = document.getElementById('wiki-content');
+        const wikiActions = document.getElementById('wiki-actions');
+        const infoMenu = document.getElementById('info-menu');
+        const infoDates = document.getElementById('info-dates');
         const deprecatedMessage = document.getElementById('deprecated-message');
         const titleDeprecatedMessage = document.getElementById('title-deprecated-message');
-        const markdownPreview = document.getElementById('markdown-preview');
         const actionButtonsContainer = document.getElementById('action-buttons-container');
-        
-        // Utility function to show a custom modal message
+        const reportWikiBtn = document.getElementById('report-wiki-btn');
+
+        // Wiki Form Elements
+        const wikiForm = document.getElementById('wiki-form');
+        const editorTitleInput = document.getElementById('editor-title');
+        const editorContentInput = document.getElementById('editor-content');
+        const originalWikiIdInput = document.getElementById('original-wiki-id');
+        const cancelEditButton = document.getElementById('cancel-edit');
+        const saveWikiBtn = document.getElementById('save-wiki-btn');
+        const markdownPreview = document.getElementById('markdown-preview');
+
+        // Profile Elements
+        const profileView = document.getElementById('profile-view');
+        const profileEditor = document.getElementById('profile-editor');
+        const profilePhoto = document.getElementById('profile-photo');
+        const profileDisplayName = document.getElementById('profile-display-name');
+        const profileUsername = document.getElementById('profile-username');
+        const profileBio = document.getElementById('profile-bio');
+        const profileBioDeprecatedMessage = document.getElementById('profile-bio-deprecated-message');
+        const editProfileBtn = document.getElementById('edit-profile-btn');
+        const deleteProfileBtn = document.getElementById('delete-profile-btn');
+        const reportProfileBtn = document.getElementById('report-profile-btn');
+        const profileForm = document.getElementById('profile-form');
+        const profileUsernameInput = document.getElementById('profile-username-input');
+        const profileDisplaynameInput = document.getElementById('profile-displayname-input');
+        const profileBioInput = document.getElementById('profile-bio-input');
+        const cancelProfileEditBtn = document.getElementById('cancel-profile-edit-btn');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+
+        // User Wiki Elements
+        const userWikiEditor = document.getElementById('user-wiki-editor');
+        const userWikiContent = document.getElementById('user-wiki-content');
+        const userWikiDeprecatedMessage = document.getElementById('user-wiki-deprecated-message');
+        const editUserWikiBtn = document.getElementById('edit-user-wiki-btn');
+        const reportUserWikiBtn = document.getElementById('report-user-wiki-btn');
+        const userWikiForm = document.getElementById('user-wiki-form');
+        const userWikiContentInput = document.getElementById('user-wiki-content-input');
+        const userWikiPreview = document.getElementById('user-wiki-preview');
+        const saveUserWikiBtn = document.getElementById('save-user-wiki-btn');
+        const cancelUserWikiEditBtn = document.getElementById('cancel-user-wiki-edit-btn');
+        const userWikiMarkdownToolbar = document.getElementById('user-wiki-markdown-toolbar');
+
+        // Global variables for current context
+        let currentUserId = null;
+        let currentUsername = null;
+        let isEditingUserWiki = false;
+
+        // Helper to show custom modal messages
         function showMessage(title, message, confirmCallback = null) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-content').textContent = message;
             const confirmBtn = document.getElementById('modal-confirm');
             const cancelBtn = document.getElementById('modal-cancel');
+            confirmBtn.onclick = null;
+            cancelBtn.onclick = null;
 
-            // Set button visibility based on if a callback is provided
             if (confirmCallback) {
                 confirmBtn.classList.remove('hidden');
                 cancelBtn.classList.remove('hidden');
-                // Remove any old event listeners
-                confirmBtn.onclick = null;
-                cancelBtn.onclick = null;
-                // Add new listeners
                 confirmBtn.onclick = () => {
                     document.getElementById('message-modal').classList.add('hidden');
                     confirmCallback(true);
@@ -310,8 +455,6 @@
             } else {
                 confirmBtn.classList.remove('hidden');
                 cancelBtn.classList.add('hidden');
-                // Remove old event listeners
-                confirmBtn.onclick = null;
                 confirmBtn.onclick = () => {
                     document.getElementById('message-modal').classList.add('hidden');
                 };
@@ -319,57 +462,281 @@
             document.getElementById('message-modal').classList.remove('hidden');
         }
 
-        // Function to handle markdown button clicks and insert syntax
-        function insertMarkdown(text, surrounding = false) {
-            const textarea = editorContentInput;
+        // Helper to show/hide sections
+        function showSection(sectionId) {
+            [wikiContentSection, editorSection, profileSection, profileView, profileEditor, userWikiEditor].forEach(el => el.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        // Helper for markdown insertion
+        function insertMarkdown(textarea, markdown, surrounding = false) {
             const start = textarea.selectionStart;
             const end = textarea.selectionEnd;
             const originalText = textarea.value;
 
             if (surrounding && start !== end) {
-                // Wrap selected text
                 const before = originalText.substring(0, start);
                 const selected = originalText.substring(start, end);
                 const after = originalText.substring(end);
-                textarea.value = `${before}${text}${selected}${text}${after}`;
-                textarea.selectionStart = start + text.length;
-                textarea.selectionEnd = end + text.length;
+                textarea.value = `${before}${markdown}${selected}${markdown}${after}`;
+                textarea.selectionStart = start + markdown.length;
+                textarea.selectionEnd = end + markdown.length;
             } else {
-                // Insert at cursor or at end if nothing is selected
                 const before = originalText.substring(0, start);
                 const after = originalText.substring(end);
-                textarea.value = `${before}${text}${after}`;
-                textarea.selectionStart = textarea.selectionEnd = start + text.length;
+                textarea.value = `${before}${markdown}${after}`;
+                textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
             }
             textarea.focus();
-            updateMarkdownPreview();
         }
 
-        function updateMarkdownPreview() {
-            markdownPreview.innerHTML = marked.parse(editorContentInput.value);
+        function updateMarkdownPreview(textarea, preview) {
+            preview.innerHTML = marked.parse(textarea.value);
         }
 
-        // --- Search Logic ---
-        async function searchWikis(queryText) {
+        // --- Core Router Function ---
+        async function router() {
             loadingSpinner.classList.remove('hidden');
-            mainContent.classList.add('hidden');
-            editorSection.classList.add('hidden');
+            const path = window.location.pathname;
+            const parts = path.split('/').filter(Boolean);
+            const route = parts[0] || 'wiki';
+            const identifier = parts[1] ? decodeURIComponent(parts[1]).replace(/\+/g, ' ') : '';
+            const subRoute = parts[2] || '';
+
+            switch (route) {
+                case 'wiki':
+                    if (identifier === 'Home' || !identifier) {
+                        await showWiki('Home');
+                    } else {
+                        await showWiki(identifier);
+                    }
+                    break;
+                case 'createwiki':
+                    await showWikiEditor(null);
+                    break;
+                case 'editwiki':
+                    await showWikiEditor(identifier);
+                    break;
+                case 'search':
+                    await showSearch(identifier);
+                    break;
+                case 'profiles':
+                    await showProfile(identifier, subRoute);
+                    break;
+                default:
+                    // Fallback to home if route is unknown
+                    window.history.replaceState({}, '', '/');
+                    router();
+                    break;
+            }
+            loadingSpinner.classList.add('hidden');
+        }
+
+        // --- Wiki Section Logic ---
+        async function showWiki(wikiName) {
+            showSection('wiki-content-section');
             wikiActions.classList.add('hidden');
             infoMenu.classList.add('hidden');
+            deprecatedMessage.classList.add('hidden');
+            titleDeprecatedMessage.classList.add('hidden');
             actionButtonsContainer.innerHTML = '';
             
+            try {
+                let wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
+                if (!wikiDoc.exists() && wikiName === 'Home') {
+                    const homeContent = "# Welcome to the Wiki!\nThis is the main page. You can edit this page or create a new one.";
+                    await setDoc(doc(db, 'wikis', 'Home'), {
+                        title: 'Home',
+                        content: homeContent,
+                        authorId: 'system',
+                        authorName: 'System',
+                        createdAt: new Date().toISOString(),
+                        lastModified: new Date().toISOString(),
+                        isDeprecated: false,
+                        isTitleDeprecated: false
+                    });
+                    wikiDoc = await getDoc(doc(db, 'wikis', 'Home'));
+                }
+
+                if (wikiDoc.exists()) {
+                    const data = wikiDoc.data();
+                    wikiTitle.textContent = data.title;
+                    const createdAt = new Date(data.createdAt).toLocaleString();
+                    const lastModified = new Date(data.lastModified).toLocaleString();
+                    infoDates.innerHTML = `<p class="mb-2">Created On: <span class="font-bold">${createdAt}</span></p><p>Last Edited On: <span class="font-bold">${lastModified}</span></p>`;
+                    
+                    addCommonActionButtons(wikiDoc.id, 'wiki');
+
+                    if (data.isTitleDeprecated) {
+                        wikiContent.innerHTML = '';
+                        titleDeprecatedMessage.classList.remove('hidden');
+                    } else if (data.isDeprecated) {
+                        wikiContent.innerHTML = '';
+                        deprecatedMessage.classList.remove('hidden');
+                        if (auth.currentUser) {
+                            wikiActions.innerHTML = '';
+                            const editBtn = document.createElement('button');
+                            editBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                            editBtn.textContent = 'Edit Wiki to Restore';
+                            editBtn.onclick = () => {
+                                window.history.pushState({}, '', `/editwiki/${wikiDoc.id}`);
+                                router();
+                            };
+                            wikiActions.appendChild(editBtn);
+                            wikiActions.classList.remove('hidden');
+                        }
+                    } else {
+                        wikiContent.innerHTML = marked.parse(data.content);
+                        if (auth.currentUser) {
+                            addWikiActionButtons(wikiDoc.id);
+                        }
+                    }
+                } else {
+                    wikiTitle.textContent = 'Page Not Found';
+                    wikiContent.innerHTML = `<p class="text-gray-500 mb-4">This wiki page does not exist.
+                        ${auth.currentUser ? '' : 'Sign in to create it.'}</p>`;
+                    if (auth.currentUser) {
+                        const createBtn = document.createElement('button');
+                        createBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                        createBtn.textContent = 'Create Wiki Here!';
+                        createBtn.onclick = () => {
+                            window.history.pushState({}, '', `/createwiki`);
+                            editorTitleInput.value = decodeURIComponent(wikiName).replace(/-/g, ' ');
+                            router();
+                        };
+                        wikiContent.appendChild(createBtn);
+                    }
+                }
+            } catch (e) {
+                console.error("Error loading wiki:", e);
+                wikiTitle.textContent = 'Error';
+                wikiContent.innerHTML = '<p class="text-red-500">Failed to load the page. Please check your internet connection.</p>';
+            }
+        }
+
+        function addCommonActionButtons(id, type) {
+            actionButtonsContainer.innerHTML = '';
+            
+            const infoBtn = document.createElement('button');
+            infoBtn.id = 'info-btn';
+            infoBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none';
+            infoBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+            infoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                infoMenu.classList.toggle('hidden');
+            });
+            actionButtonsContainer.appendChild(infoBtn);
+            
+            const copyLinkBtn = document.createElement('button');
+            copyLinkBtn.id = 'copy-link-btn';
+            copyLinkBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md';
+            copyLinkBtn.innerHTML = `<svg id="link-svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link-2"><path d="M15 7h3a5 5 0 0 1 0 10h-3m-6 0H6A5 5 0 0 1 6 7h3m-2 5h8"></path></svg>`;
+            copyLinkBtn.addEventListener('click', () => {
+                const currentUrl = window.location.href;
+                const tempInput = document.createElement('input');
+                document.body.appendChild(tempInput);
+                tempInput.value = currentUrl;
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showMessage('Link Copied!', 'The link has been copied to your clipboard.');
+            });
+            actionButtonsContainer.appendChild(copyLinkBtn);
+            
+            if (type === 'wiki') {
+                 reportWikiBtn.classList.remove('hidden');
+            } else {
+                 reportWikiBtn.classList.add('hidden');
+            }
+        }
+        
+        function addWikiActionButtons(wikiId) {
+            const editBtn = document.createElement('button');
+            editBtn.id = 'edit-btn';
+            editBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md';
+            editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>`;
+            editBtn.onclick = () => {
+                window.history.pushState({}, '', `/editwiki/${wikiId}`);
+                router();
+            };
+            actionButtonsContainer.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.id = 'delete-btn';
+            deleteBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md';
+            deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>`;
+            deleteBtn.onclick = () => {
+                showMessage('Confirm Deletion', `Are you sure you want to delete this wiki page? This cannot be undone.`,
+                    async (confirmed) => {
+                        if (confirmed) {
+                            try {
+                                await deleteDoc(doc(db, 'wikis', wikiId));
+                                showMessage('Success!', 'The page has been deleted.');
+                                window.history.pushState({}, '', '/');
+                                router();
+                            } catch (e) {
+                                console.error("Error deleting wiki:", e);
+                                showMessage('Error', 'Failed to delete the page. Please try again.');
+                            }
+                        }
+                    }
+                );
+            };
+            actionButtonsContainer.appendChild(deleteBtn);
+        }
+
+        async function showWikiEditor(wikiName) {
+            showSection('editor-section');
+            if (!auth.currentUser) {
+                showMessage('Authentication Required', 'You must be signed in to edit a wiki page.');
+                window.history.pushState({}, '', '/');
+                router();
+                return;
+            }
+
+            editorContentInput.value = '';
+            updateMarkdownPreview(editorContentInput, markdownPreview);
+
+            if (wikiName) {
+                const wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
+                if (wikiDoc.exists()) {
+                    const data = wikiDoc.data();
+                    if (data.isTitleDeprecated) {
+                         showMessage('Page Unavailable', 'This page cannot be edited due to a policy violation.');
+                         window.history.back();
+                         return;
+                    }
+                    editorTitleInput.value = data.title;
+                    editorContentInput.value = data.content;
+                    originalWikiIdInput.value = wikiDoc.id;
+                    updateMarkdownPreview(editorContentInput, markdownPreview);
+                    wikiTitle.textContent = `Editing: ${data.title}`;
+                } else {
+                    window.history.replaceState({}, '', `/createwiki`);
+                    editorTitleInput.value = decodeURIComponent(wikiName).replace(/-/g, ' ');
+                    router();
+                }
+            } else {
+                editorTitleInput.value = '';
+                originalWikiIdInput.value = '';
+                wikiTitle.textContent = 'Create New Wiki Page';
+            }
+        }
+
+        async function showSearch(queryText) {
+            showSection('wiki-content-section');
             wikiTitle.textContent = `Search Results for "${queryText}"`;
             let resultsHtml = '';
             
             try {
                 const q = query(collection(db, 'wikis'));
                 const querySnapshot = await getDocs(q);
-                
                 const lowerCaseQuery = queryText.toLowerCase();
                 const results = [];
                 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
+                    if (data.isTitleDeprecated) return;
                     const title = data.title;
                     const content = data.content;
                     const docId = doc.id;
@@ -399,254 +766,115 @@
                 resultsHtml = `<p class="text-red-500">Failed to perform search. Please try again.</p>`;
             } finally {
                 wikiContent.innerHTML = resultsHtml;
-                loadingSpinner.classList.add('hidden');
-                mainContent.classList.remove('hidden');
             }
         }
         
-        // --- Wiki Page Loading Logic ---
-        async function loadWikiPage(auth, db) {
-            loadingSpinner.classList.remove('hidden');
-            mainContent.classList.add('hidden');
-            editorSection.classList.add('hidden');
-            wikiActions.classList.add('hidden');
-            infoMenu.classList.add('hidden');
-            deprecatedMessage.classList.add('hidden');
-            titleDeprecatedMessage.classList.add('hidden');
-            originalWikiIdInput.value = '';
+        // --- Profile & User Wiki Section Logic ---
+        async function showProfile(username, subRoute) {
+            showSection('profile-section');
+            profileView.classList.add('hidden');
+            profileEditor.classList.add('hidden');
+            userWikiEditor.classList.add('hidden');
+
+            const q = query(collection(db, 'profiles'), where('username', '==', username));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                showMessage('Profile Not Found', 'This user profile does not exist.');
+                profileSection.innerHTML = '<p class="text-gray-500 text-center p-8">Profile not found.</p>';
+                return;
+            }
             
-            actionButtonsContainer.innerHTML = '';
-            reportBtn.classList.remove('hidden');
+            const profileDoc = querySnapshot.docs[0];
+            const profileData = profileDoc.data();
+            currentUserId = profileDoc.id;
+            currentUsername = profileData.username;
 
-            const path = window.location.pathname;
-            const parts = path.split('/').filter(Boolean); // Filter out empty strings
-            const route = parts[0] || '';
-            const wikiName = (route === 'wiki' && parts[1]) ? parts[1] : 
-                             (route === 'editwiki' && parts[1]) ? parts[1] : 
-                             'Home';
-
-            if (route === 'createwiki') {
-                if (!auth.currentUser) {
-                    wikiTitle.textContent = 'Authentication Required';
-                    wikiContent.innerHTML = '<p class="text-gray-500">You must be signed in to create a wiki page.</p>';
-                    loadingSpinner.classList.add('hidden');
-                    mainContent.classList.remove('hidden');
-                    return;
-                }
-                wikiTitle.textContent = 'Create New Wiki Page';
-                editorTitleInput.value = '';
-                editorContentInput.value = '';
-                updateMarkdownPreview();
-                editorSection.classList.remove('hidden');
-                mainContent.classList.add('hidden');
-                loadingSpinner.classList.add('hidden');
-                return;
-            } else if (route === 'editwiki' && wikiName !== 'Home') {
-                 if (!auth.currentUser) {
-                    wikiTitle.textContent = 'Authentication Required';
-                    wikiContent.innerHTML = '<p class="text-gray-500">You must be signed in to edit a wiki page.</p>';
-                    loadingSpinner.classList.add('hidden');
-                    mainContent.classList.remove('hidden');
-                    return;
-                }
-                const wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
-                if (wikiDoc.exists()) {
-                    const data = wikiDoc.data();
-                    if (data.isTitleDeprecated) {
-                         wikiTitle.textContent = data.title;
-                         titleDeprecatedMessage.classList.remove('hidden');
-                         reportBtn.classList.add('hidden'); // Hide report button for title-deprecated wikis
-                         wikiContent.innerHTML = '';
-                         loadingSpinner.classList.add('hidden');
-                         mainContent.classList.remove('hidden');
-                         return;
-                    }
-                    wikiTitle.textContent = `Editing: ${data.title}`;
-                    editorTitleInput.value = data.title;
-                    editorContentInput.value = data.content;
-                    originalWikiIdInput.value = wikiDoc.id;
-                    updateMarkdownPreview();
-                    editorSection.classList.remove('hidden');
-                    mainContent.classList.add('hidden');
-                    loadingSpinner.classList.add('hidden');
-                } else {
-                    // Wiki not found, route to a 'create' page
-                    window.history.replaceState({}, '', `/createwiki`);
-                    loadWikiPage(auth, db);
-                }
-                return;
-            } else if (route === 'search' && parts[1]) {
-                const queryText = decodeURIComponent(parts[1]).replace(/\+/g, ' ');
-                searchWikis(queryText);
-                return;
-            }
-
-            try {
-                let wikiDoc = await getDoc(doc(db, 'wikis', wikiName));
-
-                // If the "Home" page doesn't exist, create it automatically
-                if (!wikiDoc.exists() && wikiName === 'Home') {
-                    const homeContent = "# Welcome to the Wiki!\nThis is the main page. You can edit this page or create a new one.";
-                    await setDoc(doc(db, 'wikis', 'Home'), {
-                        title: 'Home',
-                        content: homeContent,
-                        authorId: 'system',
-                        authorName: 'System',
-                        createdAt: new Date().toISOString(),
-                        lastModified: new Date().toISOString(),
-                        isDeprecated: false,
-                        isTitleDeprecated: false
-                    });
-                    wikiDoc = await getDoc(doc(db, 'wikis', 'Home')); // Fetch the new doc
-                }
-
-                if (wikiDoc.exists()) {
-                    const data = wikiDoc.data();
-                    wikiTitle.textContent = data.title;
-                    
-                    // Display dates in the info menu
-                    const createdAt = new Date(data.createdAt).toLocaleString();
-                    const lastModified = new Date(data.lastModified).toLocaleString();
-                    infoDates.innerHTML = `<p class="mb-2">Created On: <span class="font-bold">${createdAt}</span></p><p>Last Edited On: <span class="font-bold">${lastModified}</span></p>`;
-                    
-                    // Show action buttons container
-                    actionButtonsContainer.innerHTML = '';
-
-                    // The buttons that are always visible
-                    const infoBtn = document.createElement('button');
-                    infoBtn.id = 'info-btn';
-                    infoBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none';
-                    infoBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    `;
-                    infoBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        infoMenu.classList.toggle('hidden');
-                    });
-                    actionButtonsContainer.appendChild(infoBtn);
-                    
-                    const copyLinkBtn = document.createElement('button');
-                    copyLinkBtn.id = 'copy-link-btn';
-                    copyLinkBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md';
-                    copyLinkBtn.innerHTML = `
-                        <svg id="link-svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link-2">
-                            <path d="M15 7h3a5 5 0 0 1 0 10h-3m-6 0H6A5 5 0 0 1 6 7h3m-2 5h8"></path>
-                        </svg>
-                    `;
-                    copyLinkBtn.addEventListener('click', () => {
-                        const currentUrl = window.location.href;
-                        const tempInput = document.createElement('input');
-                        document.body.appendChild(tempInput);
-                        tempInput.value = currentUrl;
-                        tempInput.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(tempInput);
-                        showMessage('Link Copied!', 'The wiki link has been copied to your clipboard.');
-                    });
-                    actionButtonsContainer.appendChild(copyLinkBtn);
-
-                    if (data.isTitleDeprecated) {
-                        wikiContent.innerHTML = '';
-                        titleDeprecatedMessage.classList.remove('hidden');
-                        wikiActions.classList.add('hidden'); // Hide all actions
-                        reportBtn.classList.add('hidden'); // Hide report button for title-deprecated wikis
-                    } else if (data.isDeprecated) {
-                        wikiContent.innerHTML = '';
-                        deprecatedMessage.classList.remove('hidden');
-                        
-                        // Only show edit button for logged-in users to allow restoration
-                        if (auth.currentUser) {
-                            wikiActions.innerHTML = '';
-                            const editBtn = document.createElement('button');
-                            editBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
-                            editBtn.textContent = 'Edit Wiki to Restore';
-                            editBtn.onclick = () => {
-                                window.history.pushState({}, '', `/editwiki/${wikiDoc.id}`);
-                                loadWikiPage(auth, db);
-                            };
-                            wikiActions.appendChild(editBtn);
-                            wikiActions.classList.remove('hidden');
-                        }
-
-                    } else {
-                        wikiContent.innerHTML = marked.parse(data.content);
-                        // Show edit/delete icons if a user is signed in and page is not deprecated
-                        if (auth.currentUser) {
-                            const editBtn = document.createElement('button');
-                            editBtn.id = 'edit-btn';
-                            editBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md';
-                            editBtn.innerHTML = `
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                            `;
-                            editBtn.onclick = () => {
-                                window.history.pushState({}, '', `/editwiki/${wikiDoc.id}`);
-                                loadWikiPage(auth, db);
-                            };
-                            actionButtonsContainer.appendChild(editBtn);
-
-                            const deleteBtn = document.createElement('button');
-                            deleteBtn.id = 'delete-btn';
-                            deleteBtn.className = 'text-gray-500 hover:text-gray-700 transition-colors focus:outline-none p-1 rounded-md';
-                            deleteBtn.innerHTML = `
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            `;
-                            deleteBtn.onclick = () => {
-                                showMessage(
-                                    'Confirm Deletion', 
-                                    `Are you sure you want to delete the wiki page titled "${data.title}"? This cannot be undone.`,
-                                    async (confirmed) => {
-                                        if (confirmed) {
-                                            try {
-                                                await deleteDoc(doc(db, 'wikis', wikiName));
-                                                showMessage('Success!', 'The page has been deleted.');
-                                                window.history.pushState({}, '', '/');
-                                                loadWikiPage(auth, db);
-                                            } catch (e) {
-                                                console.error("Error deleting wiki:", e);
-                                                showMessage('Error', 'Failed to delete the page. Please try again.');
-                                            }
-                                        }
-                                    }
-                                );
-                            };
-                            actionButtonsContainer.appendChild(deleteBtn);
-                        }
-                    }
-
-                } else {
-                    wikiTitle.textContent = 'Page Not Found';
-                    wikiContent.innerHTML = `<p class="text-gray-500 mb-4">This wiki page does not exist.
-                        ${auth.currentUser ? '' : 'Sign in to create it.'}</p>`;
-                    
-                    if (auth.currentUser) {
-                        const createBtn = document.createElement('button');
-                        createBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
-                        createBtn.textContent = 'Create Wiki Here!';
-                        createBtn.onclick = () => {
-                            window.history.pushState({}, '', `/createwiki`);
-                            editorTitleInput.value = decodeURIComponent(wikiName).replace(/-/g, ' ');
-                            loadWikiPage(auth, db);
-                        };
-                        wikiContent.appendChild(createBtn);
-                    }
-                }
-            } catch (e) {
-                console.error("Error loading wiki:", e);
-                wikiTitle.textContent = 'Error';
-                wikiContent.innerHTML = '<p class="text-red-500">Failed to load the page. Please check your internet connection.</p>';
-            } finally {
-                loadingSpinner.classList.add('hidden');
-                mainContent.classList.remove('hidden');
+            if (subRoute === 'userwiki' && auth.currentUser && auth.currentUser.uid === currentUserId) {
+                showUserWikiEditor();
+            } else {
+                showProfileView(profileData);
             }
         }
         
-        // --- Wiki Form Submission and Save Logic ---
+        function showProfileView(profileData) {
+            showSection('profile-section');
+            profileView.classList.remove('hidden');
+            profileEditor.classList.add('hidden');
+            userWikiEditor.classList.add('hidden');
+            
+            profilePhoto.src = profileData.photoURL || 'https://placehold.co/120x120/e5e7eb/4b5563?text=User';
+            profileDisplayName.textContent = profileData.displayName || profileData.username;
+            profileUsername.textContent = `@${profileData.username}`;
+            
+            // Bio
+            if (profileData.isBioDeprecated) {
+                profileBio.classList.add('hidden');
+                profileBioDeprecatedMessage.classList.remove('hidden');
+            } else {
+                profileBio.classList.remove('hidden');
+                profileBioDeprecatedMessage.classList.add('hidden');
+                profileBio.textContent = profileData.bio || '';
+            }
+
+            // User Wiki
+            if (profileData.isUserWikiDeprecated) {
+                userWikiContent.innerHTML = '';
+                userWikiDeprecatedMessage.classList.remove('hidden');
+            } else {
+                userWikiContent.innerHTML = marked.parse(profileData.userwiki || 'This user has not created a wiki yet.');
+                userWikiDeprecatedMessage.classList.add('hidden');
+            }
+            
+            // Buttons
+            if (auth.currentUser && auth.currentUser.uid === currentUserId) {
+                editProfileBtn.classList.remove('hidden');
+                deleteProfileBtn.classList.remove('hidden');
+                editUserWikiBtn.classList.remove('hidden');
+                reportProfileBtn.classList.add('hidden'); // Cannot report your own profile
+                reportUserWikiBtn.classList.add('hidden'); // Cannot report your own user wiki
+            } else {
+                editProfileBtn.classList.add('hidden');
+                deleteProfileBtn.classList.add('hidden');
+                editUserWikiBtn.classList.add('hidden');
+                reportProfileBtn.classList.remove('hidden');
+                reportUserWikiBtn.classList.remove('hidden');
+            }
+        }
+        
+        function showProfileEditor(isNew = false) {
+            showSection('profile-section');
+            profileView.classList.add('hidden');
+            profileEditor.classList.remove('hidden');
+            userWikiEditor.classList.add('hidden');
+            
+            profileUsernameInput.readOnly = !isNew;
+            profileUsernameInput.placeholder = isNew ? 'Enter a unique username' : 'Username cannot be changed';
+            if (!isNew) {
+                profileUsernameInput.value = currentUsername;
+            }
+        }
+
+        function showUserWikiEditor() {
+            showSection('profile-section');
+            profileView.classList.add('hidden');
+            profileEditor.classList.add('hidden');
+            userWikiEditor.classList.remove('hidden');
+            isEditingUserWiki = true;
+            
+            const profileDocRef = doc(db, 'profiles', currentUserId);
+            getDoc(profileDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    userWikiContentInput.value = data.userwiki || '';
+                    updateMarkdownPreview(userWikiContentInput, userWikiPreview);
+                }
+            });
+        }
+
+        // --- Event Listeners & Initializers ---
+        
+        // Wiki & Editor Events
         wikiForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const user = auth.currentUser;
@@ -658,91 +886,237 @@
             const pageTitle = editorTitleInput.value.trim();
             const pageContent = editorContentInput.value.trim();
             const originalId = originalWikiIdInput.value;
-
             if (!pageTitle) {
                 showMessage('Missing Title', 'Please enter a title for the wiki page.');
                 return;
             }
-            
-            // Show loading state
             saveWikiBtn.textContent = 'Saving...';
             saveWikiBtn.disabled = true;
             
             try {
-                // --- Step 1: Moderate the content using the Gemini API ---
                 const moderationPrompt = `Is the following text suitable for all ages? Answer only with 'Yes' or 'No'.
                 Text: "${pageContent}"`;
-
                 const result = await model.generateContent(moderationPrompt);
                 const responseText = result.response.text().trim();
                 
                 if (responseText.toLowerCase() === 'no') {
                     showMessage('Content Flagged', 'This content was flagged as inappropriate and cannot be saved. Please revise it.');
-                    saveWikiBtn.textContent = 'Save Wiki';
-                    saveWikiBtn.disabled = false;
                     return;
                 }
-                
-                // Determine the new document ID from the new title
                 const newDocId = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
                 if (originalId) {
-                    // Update existing wiki
                     if (originalId !== newDocId) {
-                        // Title changed, so create a new document and delete the old one
                         await setDoc(doc(db, 'wikis', newDocId), {
-                            title: pageTitle,
-                            content: pageContent,
-                            authorId: user.uid,
-                            authorName: user.displayName,
-                            createdAt: new Date().toISOString(),
-                            lastModified: new Date().toISOString(),
-                            isDeprecated: false,
-                            isTitleDeprecated: false
+                            title: pageTitle, content: pageContent, authorId: user.uid, authorName: user.displayName,
+                            createdAt: new Date().toISOString(), lastModified: new Date().toISOString(),
+                            isDeprecated: false, isTitleDeprecated: false
                         });
                         await deleteDoc(doc(db, 'wikis', originalId));
                     } else {
-                        // Title did not change, just update the existing document
                         await updateDoc(doc(db, 'wikis', originalId), {
-                            title: pageTitle,
-                            content: pageContent,
-                            lastModified: new Date().toISOString(),
-                            isDeprecated: false,
-                            isTitleDeprecated: false
+                            title: pageTitle, content: pageContent, lastModified: new Date().toISOString(),
+                            isDeprecated: false, isTitleDeprecated: false
                         });
                     }
                     showMessage('Success!', `"${pageTitle}" has been updated.`);
                     window.history.pushState({}, '', `/wiki/${newDocId}`);
                 } else {
-                    // Create new wiki
                     await setDoc(doc(db, 'wikis', newDocId), {
-                        title: pageTitle,
-                        content: pageContent,
-                        authorId: user.uid,
-                        authorName: user.displayName,
-                        createdAt: new Date().toISOString(),
-                        lastModified: new Date().toISOString(),
-                        isDeprecated: false,
-                        isTitleDeprecated: false
+                        title: pageTitle, content: pageContent, authorId: user.uid, authorName: user.displayName,
+                        createdAt: new Date().toISOString(), lastModified: new Date().toISOString(),
+                        isDeprecated: false, isTitleDeprecated: false
                     });
                     showMessage('Success!', `"${pageTitle}" has been saved.`);
                     window.history.pushState({}, '', `/wiki/${newDocId}`);
                 }
-                
-                loadWikiPage(auth, db);
+                router();
             } catch (e) {
                 console.error("Error saving wiki:", e);
                 showMessage('Error', `Failed to save the wiki page: ${e.message}. Please try again.`);
             } finally {
-                editorSection.classList.add('hidden');
                 saveWikiBtn.textContent = 'Save Wiki';
                 saveWikiBtn.disabled = false;
             }
         });
         
-        // --- Report Logic ---
-        reportBtn.addEventListener('click', () => {
+        cancelEditButton.addEventListener('click', () => {
+            window.history.back();
+        });
+
+        editorContentInput.addEventListener('keyup', () => updateMarkdownPreview(editorContentInput, markdownPreview));
+        
+        // Profile Events
+        editProfileBtn.addEventListener('click', () => {
+            showProfileEditor(false);
+            const profileDocRef = doc(db, 'profiles', currentUserId);
+            getDoc(profileDocRef).then(docSnap => {
+                const data = docSnap.data();
+                profileDisplaynameInput.value = data.displayName || '';
+                profileBioInput.value = data.bio || '';
+            });
+        });
+        
+        deleteProfileBtn.addEventListener('click', () => {
+            showMessage('Confirm Deletion', `Are you sure you want to delete your profile? This cannot be undone.`,
+                async (confirmed) => {
+                    if (confirmed) {
+                        try {
+                            await deleteDoc(doc(db, 'profiles', currentUserId));
+                            showMessage('Profile Deleted', 'Your profile has been deleted. You will be signed out.');
+                            signOut(auth);
+                            window.history.pushState({}, '', '/');
+                        } catch (e) {
+                            console.error("Error deleting profile:", e);
+                            showMessage('Error', 'Failed to delete profile. Please try again.');
+                        }
+                    }
+                }
+            );
+        });
+
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            const isNew = profileUsernameInput.readOnly === false;
+            const username = profileUsernameInput.value.trim().toLowerCase();
+            const displayName = profileDisplaynameInput.value.trim();
+            const bio = profileBioInput.value.trim();
+
+            if (!user) {
+                showMessage('Authentication Required', 'You must be signed in to save your profile.');
+                return;
+            }
+
+            saveProfileBtn.textContent = 'Saving...';
+            saveProfileBtn.disabled = true;
+
+            try {
+                if (isNew) {
+                    const q = query(collection(db, 'profiles'), where('username', '==', username));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        showMessage('Username Taken', 'This username is already in use. Please choose another.');
+                        return;
+                    }
+                }
+
+                const moderationPrompt = `Is the following text suitable for all ages? Answer only with 'Yes' or 'No'.
+                Text: "${bio}"`;
+                const result = await model.generateContent(moderationPrompt);
+                const responseText = result.response.text().trim();
+                
+                if (responseText.toLowerCase() === 'no') {
+                    showMessage('Content Flagged', 'Your bio was flagged as inappropriate and cannot be saved. Please revise it.');
+                    return;
+                }
+
+                await setDoc(doc(db, 'profiles', user.uid), {
+                    username: username,
+                    displayName: displayName || user.displayName,
+                    bio: bio,
+                    photoURL: user.photoURL,
+                    isBioDeprecated: false,
+                    isUserWikiDeprecated: false,
+                    userwiki: '',
+                    lastModified: new Date().toISOString()
+                }, { merge: true });
+
+                showMessage('Profile Saved!', 'Your profile has been successfully saved.');
+                window.history.pushState({}, '', `/profiles/@${username}`);
+                router();
+
+            } catch (e) {
+                console.error("Error saving profile:", e);
+                showMessage('Error', `Failed to save profile: ${e.message}.`);
+            } finally {
+                saveProfileBtn.textContent = 'Save Profile';
+                saveProfileBtn.disabled = false;
+            }
+        });
+
+        cancelProfileEditBtn.addEventListener('click', () => {
+            window.history.back();
+        });
+        
+        // User Wiki Events
+        editUserWikiBtn.addEventListener('click', () => {
+             window.history.pushState({}, '', `/profiles/@${currentUsername}/userwiki`);
+             router();
+        });
+        
+        userWikiMarkdownToolbar.addEventListener('click', (e) => {
+            if (e.target.classList.contains('markdown-btn')) {
+                const markdown = e.target.dataset.markdown;
+                if (markdown === '**' || markdown === '_' || markdown === '[]()' || markdown === '![]()') {
+                    insertMarkdown(userWikiContentInput, markdown, true);
+                } else {
+                    insertMarkdown(userWikiContentInput, markdown);
+                }
+                updateMarkdownPreview(userWikiContentInput, userWikiPreview);
+            }
+        });
+        
+        userWikiContentInput.addEventListener('keyup', () => updateMarkdownPreview(userWikiContentInput, userWikiPreview));
+        
+        userWikiForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (!user) {
+                showMessage('Authentication Required', 'You must be signed in to save your user wiki.');
+                return;
+            }
+            
+            const content = userWikiContentInput.value.trim();
+            saveUserWikiBtn.textContent = 'Saving...';
+            saveUserWikiBtn.disabled = true;
+
+            try {
+                const moderationPrompt = `Is the following text suitable for all ages? Answer only with 'Yes' or 'No'.
+                Text: "${content}"`;
+                const result = await model.generateContent(moderationPrompt);
+                const responseText = result.response.text().trim();
+
+                if (responseText.toLowerCase() === 'no') {
+                    showMessage('Content Flagged', 'Your user wiki was flagged as inappropriate and cannot be saved. Please revise it.');
+                    return;
+                }
+                
+                await updateDoc(doc(db, 'profiles', user.uid), {
+                    userwiki: content,
+                    isUserWikiDeprecated: false,
+                    lastModified: new Date().toISOString()
+                });
+
+                showMessage('User Wiki Saved!', 'Your user wiki has been saved.');
+                window.history.pushState({}, '', `/profiles/@${currentUsername}`);
+                router();
+            } catch (e) {
+                console.error("Error saving user wiki:", e);
+                showMessage('Error', `Failed to save user wiki: ${e.message}.`);
+            } finally {
+                saveUserWikiBtn.textContent = 'Save User Wiki';
+                saveUserWikiBtn.disabled = false;
+            }
+        });
+        
+        cancelUserWikiEditBtn.addEventListener('click', () => {
+            window.history.back();
+        });
+
+        // Reporting
+        reportWikiBtn.addEventListener('click', () => {
             reportModal.classList.remove('hidden');
+            reportType.value = 'wiki-content';
+        });
+
+        reportProfileBtn.addEventListener('click', () => {
+            reportModal.classList.remove('hidden');
+            reportType.value = 'profile-bio';
+        });
+        
+        reportUserWikiBtn.addEventListener('click', () => {
+            reportModal.classList.remove('hidden');
+            reportType.value = 'user-wiki';
         });
 
         reportCancelBtn.addEventListener('click', () => {
@@ -757,50 +1131,58 @@
                 showMessage('Authentication Required', 'You must be signed in to submit a report.');
                 return;
             }
-
             const reason = reportReason.value.trim();
             const reportTypeSelected = reportType.value;
-            const currentWikiId = window.location.pathname.split('/').filter(Boolean)[1];
-            
-            const wikiDoc = await getDoc(doc(db, 'wikis', currentWikiId));
-            const wikiData = wikiDoc.exists() ? wikiDoc.data() : null;
-
-            if (!wikiData) {
-                showMessage('Error', 'Wiki page not found.');
-                return;
-            }
-
-            let moderationPrompt;
-            if (reportTypeSelected === 'content') {
-                moderationPrompt = `Based on the following user report, is the provided wiki content a violation of community guidelines (e.g., hate speech, violence, explicit content, misinformation)? Respond with 'Yes' if it is a violation, and 'No' if it is not.
-                User Report: "${reason}"
-                Wiki Content: "${wikiData.content}"`;
-            } else { // 'title'
-                moderationPrompt = `Based on the following user report, is the provided wiki title a violation of community guidelines (e.g., hate speech, violence, explicit content)? Respond with 'Yes' if it is a violation, and 'No' if it is not.
-                User Report: "${reason}"
-                Wiki Title: "${wikiData.title}"`;
-            }
+            let moderationPrompt = '';
+            let contentToReport = '';
+            let docRef;
 
             reportModal.classList.add('hidden');
             showMessage('Submitting Report', 'Please wait while we review the content and update the database.');
 
             try {
+                if (reportTypeSelected.startsWith('wiki-')) {
+                    const currentWikiId = window.location.pathname.split('/').filter(Boolean)[1];
+                    const wikiDoc = await getDoc(doc(db, 'wikis', currentWikiId));
+                    if (!wikiDoc.exists()) {
+                        showMessage('Error', 'Wiki page not found.'); return;
+                    }
+                    docRef = doc(db, 'wikis', currentWikiId);
+                    contentToReport = reportTypeSelected === 'wiki-title' ? wikiDoc.data().title : wikiDoc.data().content;
+                } else if (reportTypeSelected.startsWith('profile-')) {
+                    const profileDoc = await getDoc(doc(db, 'profiles', currentUserId));
+                    if (!profileDoc.exists()) {
+                        showMessage('Error', 'Profile not found.'); return;
+                    }
+                    docRef = doc(db, 'profiles', currentUserId);
+                    contentToReport = profileDoc.data().bio;
+                } else if (reportTypeSelected === 'user-wiki') {
+                    const profileDoc = await getDoc(doc(db, 'profiles', currentUserId));
+                    if (!profileDoc.exists()) {
+                        showMessage('Error', 'User Wiki not found.'); return;
+                    }
+                    docRef = doc(db, 'profiles', currentUserId);
+                    contentToReport = profileDoc.data().userwiki;
+                }
+
+                moderationPrompt = `Based on the following user report, is the provided text a violation of community guidelines (e.g., hate speech, violence, explicit content, misinformation)? Respond with 'Yes' if it is a violation, and 'No' if it is not.
+                User Report: "${reason}"
+                Text to review: "${contentToReport}"`;
+                
                 const result = await model.generateContent(moderationPrompt);
                 const responseText = result.response.text().trim();
                 
                 if (responseText.toLowerCase() === 'yes') {
-                    if (reportTypeSelected === 'title') {
-                        await updateDoc(doc(db, 'wikis', currentWikiId), {
-                            isTitleDeprecated: true
-                        });
-                        showMessage('Report Success!', 'The wiki page topic has been deprecated due to a violation.');
-                    } else { // 'content'
-                        await updateDoc(doc(db, 'wikis', currentWikiId), {
-                            content: '',
-                            isDeprecated: true
-                        });
-                        showMessage('Report Success!', 'The wiki page has been deprecated due to a violation.');
+                    if (reportTypeSelected === 'wiki-title') {
+                        await updateDoc(docRef, { isTitleDeprecated: true });
+                    } else if (reportTypeSelected === 'wiki-content') {
+                        await updateDoc(docRef, { content: '', isDeprecated: true });
+                    } else if (reportTypeSelected === 'profile-bio') {
+                        await updateDoc(docRef, { isBioDeprecated: true, bio: '' });
+                    } else if (reportTypeSelected === 'user-wiki') {
+                        await updateDoc(docRef, { isUserWikiDeprecated: true, userwiki: '' });
                     }
+                    showMessage('Report Success!', 'The content was found to be in violation and has been flagged.');
                 } else {
                     showMessage('Report Received', 'Thank you for your report. The content was reviewed and no violation was found at this time.');
                 }
@@ -809,63 +1191,26 @@
                 showMessage('Error', 'Failed to submit the report. Please try again.');
             } finally {
                 reportReason.value = '';
-                // Reload the page to reflect any changes
-                loadWikiPage(auth, db);
+                router();
             }
         });
         
-        // --- Cancel Edit Button ---
-        cancelEditButton.addEventListener('click', () => {
-            window.history.back();
-        });
-
-        // Toggle info menu visibility
-        
-        document.addEventListener('click', (e) => {
-            const infoBtn = document.getElementById('info-btn');
-            const infoMenu = document.getElementById('info-menu');
-            if (infoBtn && infoMenu && !infoMenu.contains(e.target) && !infoBtn.contains(e.target)) {
-                infoMenu.classList.add('hidden');
-            }
-        });
-
-        // Event listener for markdown buttons
-        markdownToolbar.addEventListener('click', (e) => {
-            if (e.target.classList.contains('markdown-btn')) {
-                const markdown = e.target.dataset.markdown;
-                if (markdown === '**' || markdown === '_' || markdown === '[]()' || markdown === '![]()') {
-                    insertMarkdown(markdown, true);
-                } else {
-                    insertMarkdown(markdown);
-                }
-            }
-        });
-        
-        // Event listeners for search
+        // Search
         searchBtn.addEventListener('click', () => {
             const queryText = searchInput.value.trim();
             if (queryText) {
                 window.history.pushState({}, '', `/search/${encodeURIComponent(queryText)}`);
-                loadWikiPage(auth, db);
+                router();
             }
         });
-
         searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                searchBtn.click();
-            }
+            if (e.key === 'Enter') { searchBtn.click(); }
         });
-
-        // Add keyup listener for live markdown preview
-        editorContentInput.addEventListener('keyup', updateMarkdownPreview);
         
+        // Listen for history changes
+        window.addEventListener('popstate', () => router());
 
-        // Listen for history changes (back/forward buttons) to reload content
-        window.addEventListener('popstate', () => loadWikiPage(auth, db));
-
-        // Wait for the window to load before starting the application
         window.onload = function() {
-            // Your web app's Firebase configuration
             const firebaseConfig = {
                 apiKey: "AIzaSyAhmPgZumTY82E7r2KWTzINHld5dqUVSBY",
                 authDomain: "massread-8c2db.firebaseapp.com",
@@ -876,82 +1221,67 @@
                 measurementId: "G-NDN4EHZRZZ"
             };
             
-            // Initialize Firebase services and assign to global variables
             const app = initializeApp(firebaseConfig);
             const analytics = getAnalytics(app);
             auth = getAuth(app);
             db = getFirestore(app);
             const provider = new GoogleAuthProvider();
-
-            // Initialize the Gemini Developer API backend service
             const ai = getAI(app, { backend: new GoogleAIBackend() });
-            
-            // Create a GenerativeModel instance for moderation
             model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
 
-            // The main initialization logic wrapped in a listener
             onAuthStateChanged(auth, (user) => {
                 if (!hasInitialized) {
                     hasInitialized = true;
-                    // First time auth state is confirmed, load the UI and page
-                    loadWikiPage(auth, db);
-                    // Set up the rest of the UI based on the user
-                    setupAuthUI(user);
-                } else {
-                    // Update UI on subsequent auth state changes (e.g., sign in/out)
-                    setupAuthUI(user);
+                    router();
+                } else if (user && user.uid !== currentUserId) {
+                    // This handles a new user signing in
+                    router();
+                } else if (!user && currentUserId) {
+                    // This handles sign out
+                    router();
                 }
+                setupAuthUI(user);
             });
 
-            // Function to set up the auth-related UI
-            function setupAuthUI(user) {
-                authUi.innerHTML = ''; // Clear existing UI
+            async function setupAuthUI(user) {
+                authUi.innerHTML = '';
                 if (user) {
-                    // User is signed in
-                    const userText = document.createElement('span');
-                    userText.className = 'text-gray-600 text-sm md:text-base hidden sm:inline-block';
-                    userText.textContent = `Hello, ${user.displayName}`;
+                    const profileDoc = await getDoc(doc(db, 'profiles', user.uid));
+                    let username = '';
+                    if (!profileDoc.exists()) {
+                        // Prompt user to create a profile if one doesn't exist
+                        const createProfileBtn = document.createElement('button');
+                        createProfileBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                        createProfileBtn.textContent = 'Create Profile';
+                        createProfileBtn.onclick = () => showProfileEditor(true);
+                        authUi.appendChild(createProfileBtn);
+                    } else {
+                        username = profileDoc.data().username;
+                        const profileBtn = document.createElement('a');
+                        profileBtn.href = `/profiles/@${username}`;
+                        profileBtn.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg text-sm transition-colors';
+                        profileBtn.textContent = 'My Profile';
+                        authUi.appendChild(profileBtn);
+                    }
                     
+                    const newWikiBtn = document.createElement('a');
+                    newWikiBtn.href = '/createwiki';
+                    newWikiBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
+                    newWikiBtn.textContent = 'Create Wiki';
+
                     const signOutBtn = document.createElement('button');
                     signOutBtn.className = 'bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
                     signOutBtn.textContent = 'Sign Out';
-                    signOutBtn.onclick = () => {
-                        signOut(auth).then(() => {
-                            showMessage('Signed Out', 'You have been signed out successfully.');
-                        }).catch((error) => {
-                            console.error("Sign Out Error:", error);
-                            showMessage('Error', 'Failed to sign out. Please try again.');
-                        });
-                    };
+                    signOutBtn.onclick = () => signOut(auth).catch((error) => console.error("Sign Out Error:", error));
 
-                    const newWikiBtn = document.createElement('button');
-                    newWikiBtn.className = 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
-                    newWikiBtn.textContent = 'Create New Wiki';
-                    newWikiBtn.onclick = () => {
-                        window.history.pushState({}, '', '/createwiki');
-                        loadWikiPage(auth, db);
-                    };
-
-                    authUi.appendChild(userText);
                     authUi.appendChild(newWikiBtn);
                     authUi.appendChild(signOutBtn);
 
                 } else {
-                    // User is signed out
                     const signInBtn = document.createElement('button');
                     signInBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors';
                     signInBtn.textContent = 'Sign In with Google';
-                    signInBtn.onclick = () => {
-                        signInWithPopup(auth, provider).then((result) => {
-                            const user = result.user;
-                            console.log("User signed in:", user.displayName);
-                        }).catch((error) => {
-                            const errorCode = error.code;
-                            const errorMessage = error.message;
-                            console.error("Sign In Error:", errorCode, errorMessage);
-                            showMessage('Sign In Failed', 'There was an error signing you in. Please try again.');
-                        });
-                    };
+                    signInBtn.onclick = () => signInWithPopup(auth, provider).catch((error) => console.error("Sign In Error:", error));
                     authUi.appendChild(signInBtn);
                 }
             }
