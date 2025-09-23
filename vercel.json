@@ -1,24 +1,20 @@
 {
-"rewrites": [
-{
-"source": "/wiki/:path*",
-"destination": "/index.html"
-},
-{
-"source": "/createwiki",
-"destination": "/index.html"
-},
-{
-"source": "/editwiki/:path*",
-"destination": "/index.html"
-},
-{
-"source": "/search/:path*",
-"destination": "/index.html"
-},
-{
-"source": "/profiles/:path*",
-"destination": "/index.html"
-}
-]
+  "rewrites": [
+    {
+      "source": "/wiki/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/createwiki",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/editwiki/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/search/:path*",
+      "destination": "/index.html"
+    }
+  ]
 }
